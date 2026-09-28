@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Buxoro SSB Raqamli Boshqaruv Platformasi</title>
+  <meta name="description" content="KPI, QR baholash va Murojaat tizimlarini birlashtiruvchi pilot portal" />
+  <style>
+    :root{
+      --bg:#f3f7fb;--panel:#fff;--ink:#0e2441;--muted:#6d7f95;--line:#dbe7f2;
+      --blue:#0b6bcb;--blue2:#0a4f9e;--green:#10a37f;--purple:#7257d9;--orange:#f47a2f;
+      --shadow:0 18px 45px rgba(28,74,119,.10);--radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#eff6fd 0,#f8fbfe 45%,#eef5fb 100%);color:var(--ink)}
+    a{text-decoration:none;color:inherit}
+    .layout{min-height:100vh;display:grid;grid-template-columns:250px 1fr}
+    aside{background:linear-gradient(180deg,#0b315f,#0a4f9e);color:#fff;padding:28px 18px;position:sticky;top:0;height:100vh}
+    .brand{display:flex;gap:12px;align-items:center;margin-bottom:28px}
+    .brand-badge{width:48px;height:48px;border-radius:14px;background:#fff1;display:grid;place-items:center;font-size:24px;border:1px solid #ffffff2d}
+    .brand h1{font-size:16px;margin:0;line-height:1.25}.brand p{font-size:12px;margin:5px 0 0;color:#d9e8f8}
+    .nav{display:grid;gap:9px}.nav a{padding:12px 14px;border-radius:13px;color:#d9e8f8;font-size:14px}
+    .nav a.active,.nav a:hover{background:#ffffff17;color:white}
+    .aside-foot{position:absolute;bottom:22px;left:18px;right:18px;font-size:12px;color:#cfe2f7}
+    main{padding:30px}
+    .hero{border-radius:28px;background:linear-gradient(135deg,#0b6bcb,#0a4f9e);color:#fff;padding:28px 30px;box-shadow:var(--shadow);display:flex;justify-content:space-between;gap:20px;align-items:center}
+    .hero h2{font-size:30px;margin:0 0 8px}.hero p{margin:0;color:#dceeff;max-width:720px;line-height:1.55}
+    .pilot{background:#ffffff1d;border:1px solid #ffffff35;padding:10px 14px;border-radius:999px;font-size:13px;white-space:nowrap}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0}
+    .stat,.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 8px 24px rgba(35,76,112,.06)}
+    .stat{padding:18px}.stat b{display:block;font-size:22px}.stat span{font-size:12px;color:var(--muted)}
+    .modules{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .card{padding:22px;position:relative;overflow:hidden}.card:before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--accent)}
+    .icon{width:52px;height:52px;border-radius:16px;background:color-mix(in srgb,var(--accent) 12%,white);display:grid;place-items:center;font-size:26px;margin-bottom:18px}
+    .card h3{margin:0 0 8px;font-size:20px}.card p{color:var(--muted);font-size:14px;line-height:1.5;min-height:64px}
+    .meta{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 18px}.tag{font-size:11px;padding:6px 9px;border-radius:999px;background:#f1f6fa;color:#51677f;border:1px solid #e0eaf2}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 14px;border-radius:12px;background:var(--accent);color:white;font-weight:700;font-size:13px}
+    .btn.secondary{background:#edf4fb;color:#22527c;margin-left:8px}
+    .bottom{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;margin-top:18px}
+    .panel{padding:22px}.panel h3{margin:0 0 14px}.timeline{display:grid;gap:12px}.row{display:flex;gap:12px;align-items:flex-start}.dot{width:10px;height:10px;border-radius:50%;background:#10a37f;margin-top:5px;box-shadow:0 0 0 5px #10a37f14}.row b{font-size:14px}.row p{margin:3px 0 0;color:var(--muted);font-size:13px}
+    .notice{padding:14px;border-radius:15px;background:#f6f9fc;border:1px solid var(--line);color:#51677f;font-size:13px;line-height:1.5}
+    .status{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#13785f}.status:before{content:"";width:8px;height:8px;border-radius:50%;background:#19b987}
+    footer{color:#7f8fa1;font-size:12px;text-align:center;padding:24px}
+    @media(max-width:1050px){.layout{grid-template-columns:1fr}aside{height:auto;position:relative}.aside-foot{display:none}.nav{grid-template-columns:repeat(4,1fr)}.modules{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.bottom{grid-template-columns:1fr}}
+    @media(max-width:650px){main{padding:16px}.hero{align-items:flex-start;flex-direction:column}.hero h2{font-size:24px}.stats{grid-template-columns:1fr}.nav{grid-template-columns:1fr 1fr}.layout aside{padding-bottom:18px}}
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside>
+    <div class="brand">
+      <div class="brand-badge">✚</div>
+      <div><h1>Buxoro SSB</h1><p>Raqamli boshqaruv platformasi</p></div>
+    </div>
+    <nav class="nav">
+      <a class="active" href="#dashboard">⌂ &nbsp; Dashboard</a>
+      <a href="#modules">▦ &nbsp; Modullar</a>
+      <a href="#pilot">◎ &nbsp; Pilot holati</a>
+      <a href="#about">⚙ &nbsp; Integratsiya</a>
+    </nav>
+    <div class="aside-foot">Pilot versiya • Production tizimlar o‘zgartirilmagan</div>
+  </aside>
+
+  <main>
+    <section id="dashboard" class="hero">
+      <div>
+        <h2>Buxoro SSB Raqamli Boshqaruv Platformasi</h2>
+        <p>KPI nazorati, QR baholash va fuqarolar murojaatlarini bitta boshqaruv portalida jamlash uchun pilot versiya.</p>
+      </div>
+      <div class="pilot">PILOT • DEMO</div>
+    </section>
+
+    <section class="stats">
+      <div class="stat"><b>3</b><span>ulangan asosiy modul</span></div>
+      <div class="stat"><b>1</b><span>yagona kirish nuqtasi</span></div>
+      <div class="stat"><b>0</b><span>production bazaga yozuv</span></div>
+      <div class="stat"><b>100%</b><span>alohida pilot muhit</span></div>
+    </section>
+
+    <section id="modules" class="modules">
+      <article class="card" style="--accent:var(--green)">
+        <div class="icon">▥</div>
+        <h3>KPI nazorati</h3>
+        <p>Muassasalar faoliyati, yo‘nalishlar, mezonlar, baholash va umumiy KPI monitoringi.</p>
+        <div class="meta"><span class="tag">Railway</span><span class="tag">PostgreSQL</span><span class="tag">Fayl storage</span></div>
+        <a class="btn" href="https://buxoro-kpi-production.up.railway.app/" target="_blank" rel="noopener">KPI tizimini ochish ↗</a>
+      </article>
+
+      <article class="card" style="--accent:var(--purple)">
+        <div class="icon">▦</div>
+        <h3>QR baholash</h3>
+        <p>Muassasa QR-kodi orqali fuqarolar bahosi, fikrlar va boshqaruv uchun umumiy ko‘rsatkichlar.</p>
+        <div class="meta"><span class="tag">QR</span><span class="tag">Baholash</span><span class="tag">Admin panel</span></div>
+        <a class="btn" href="https://qr-baholash.up.railway.app/" target="_blank" rel="noopener">QR tizimini ochish ↗</a>
+      </article>
+
+      <article class="card" style="--accent:var(--orange)">
+        <div class="icon">▤</div>
+        <h3>Murojaatlar</h3>
+        <p>Fuqarolarning murojaatlarini qabul qilish, muassasa bo‘yicha ko‘rib chiqish va holatini boshqarish.</p>
+        <div class="meta"><span class="tag">Web</span><span class="tag">PostgreSQL</span><span class="tag">Murojaat nazorati</span></div>
+        <a class="btn" href="https://buxoro-tibbiyot-web-production.up.railway.app/" target="_blank" rel="noopener">Murojaat tizimini ochish ↗</a>
+      </article>
+    </section>
+
+    <section class="bottom">
+      <div id="pilot" class="panel">
+        <h3>Pilot holati</h3>
+        <div class="timeline">
+          <div class="row"><div class="dot"></div><div><b>Yagona portal yaratildi</b><p>Demo project va alohida GitHub repository’da.</p></div></div>
+          <div class="row"><div class="dot"></div><div><b>3 ta production modulga xavfsiz yo‘naltirish</b><p>Mavjud servislar va bazalar o‘zgartirilmaydi.</p></div></div>
+          <div class="row"><div class="dot"></div><div><b>Keyingi bosqich: umumiy autentifikatsiya</b><p>SSO va rollar pilot tasdiqlangandan keyin qo‘shiladi.</p></div></div>
+          <div class="row"><div class="dot"></div><div><b>Keyingi bosqich: umumiy analitika</b><p>API orqali uch tizimdan kerakli ko‘rsatkichlarni dashboardga chiqarish.</p></div></div>
+        </div>
+      </div>
+      <div id="about" class="panel">
+        <h3>Integratsiya tamoyili</h3>
+        <div class="notice">
+          <div class="status">Production tizimlar mustaqil ishlaydi</div>
+          <p>Ushbu pilot hozircha faqat yagona kirish nuqtasi vazifasini bajaradi. KPI, QR va Murojaat bazalariga ma’lumot yozmaydi va ularning deployment sozlamalarini o‘zgartirmaydi.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>© 2026 Buxoro viloyati sog‘liqni saqlash boshqarmasi • Pilot platforma</footer>
+  </main>
+</div>
+</body>
+</html>
