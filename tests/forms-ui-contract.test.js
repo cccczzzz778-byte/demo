@@ -16,11 +16,11 @@ test('staff form supports keyboard submission and employment type selection',()=
   assert.match(js,/maxlength=["']14["']/);
 });
 
-test('institution account form includes password visibility control',()=>{
+test('institution account form includes localized password visibility control',()=>{
   const js=read('institutions.js');
   assert.match(js,/id=["']accountForm["']/);
   assert.match(js,/toggleAccountPassword/);
-  assert.match(js,/aria-label=["'][^"']*Parol[^"']*["']/);
+  assert.match(js,/DMED\.t\(['"]showPassword['"]\)/);
 });
 
 test('modal forms use a form-level busy lock to prevent duplicate Enter submits',()=>{
@@ -32,11 +32,12 @@ test('modal forms use a form-level busy lock to prevent duplicate Enter submits'
   assert.match(inst,/DMED\.ui\.endSubmit\(form\)/);
 });
 
-test('icon-only table actions are labeled for keyboard and assistive technology',()=>{
+test('icon-only table actions use localized accessible labels',()=>{
   const staff=read('staff.js');
   const inst=read('institutions.js');
-  assert.match(staff,/aria-label=["']Xodimni tahrirlash["']/);
-  assert.match(staff,/aria-label=["']Xodimni o‘chirish["']/);
-  assert.match(inst,/aria-label=["']Muassasani tahrirlash["']/);
-  assert.match(inst,/aria-label=["']Login va parol["']/);
+  assert.match(staff,/DMED\.t\(['"]editStaff['"]\)/);
+  assert.match(staff,/DMED\.t\(['"]deleteStaff['"]\)/);
+  assert.match(inst,/DMED\.t\(['"]editInstitution['"]\)/);
+  assert.match(inst,/DMED\.t\(['"]accountCredentials['"]\)/);
+  assert.match(inst,/DMED\.t\(['"]deleteInstitution['"]\)/);
 });
