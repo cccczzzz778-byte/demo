@@ -1,9 +1,21 @@
 {
   "name":"dmed-medical-staff-production",
-  "version":"2.2.0",
+  "version":"3.0.0",
   "private":true,
   "main":"server.js",
-  "scripts":{"start":"node seed-test.js && node patch-server.js && node patch-ui.js && node server.js","test":"node --check patch-server.js && node --check patch-ui.js && node --test tests/*.test.js"},
+  "scripts":{
+    "start":"node seed-test.js && node server.js",
+    "test":"node --check server.js && node --check lib/validation.js && node --check lib/security.js && node --check lib/staff-import.js && node --check lib/staff-scope.js && node --check public/ui.js && node --check public/auth.js && node --check public/staff.js && node --check public/institutions.js && node --check public/import.js && node --check public/reports.js && node --check public/app.js && node --test tests/*.test.js"
+  },
   "engines":{"node":">=20"},
-  "dependencies":{"bcryptjs":"^2.4.3","cookie-parser":"^1.4.7","express":"^4.21.2","jsonwebtoken":"^9.0.2","pg":"^8.13.1","xlsx":"^0.18.5"}
+  "dependencies":{
+    "bcryptjs":"^2.4.3",
+    "cookie-parser":"^1.4.7",
+    "express":"^4.21.2",
+    "express-rate-limit":"^7.5.0",
+    "helmet":"^8.1.0",
+    "jsonwebtoken":"^9.0.2",
+    "pg":"^8.13.1",
+    "xlsx":"^0.18.5"
+  }
 }
