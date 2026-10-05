@@ -12,7 +12,7 @@ test('admin institution drilldown has visible scope and clear control',()=>{
   assert.match(html,/id=["']staffScopeBar["']/);
   assert.match(html,/id=["']staffScopeName["']/);
   assert.match(inst,/data-institution-id/);
-  assert.match(staff,/Barcha xodimlar/);
+  assert.match(html,/Barcha xodimlar/);
   assert.match(staff,/selectInstitutionScope/);
   assert.match(staff,/clearInstitutionScope/);
 });
