@@ -10,26 +10,27 @@
 <body>
   <section id="loginScreen" class="login-screen">
     <div class="login-card" aria-labelledby="loginTitle">
+      <div class="toolbar-actions"><button id="loginLanguageBtn" class="btn btn-secondary" type="button">Русский</button></div>
       <div class="brand-mark">DMED DATA</div>
-      <h1 id="loginTitle">Tizimga kirish</h1>
-      <p id="loginSubtitle">Tibbiyot xodimlari ma’lumotlar bazasi</p>
+      <h1 id="loginTitle" data-i18n="loginTitle">Tizimga kirish</h1>
+      <p id="loginSubtitle" data-i18n="loginSubtitle">Tibbiyot xodimlari ma’lumotlar bazasi</p>
       <form id="loginForm" novalidate>
         <div class="form-field">
-          <label for="username">Login</label>
+          <label for="username" data-i18n="username">Login</label>
           <input id="username" name="username" autocomplete="username" required maxlength="80">
           <small class="field-error" data-error-for="username"></small>
         </div>
         <div class="form-field">
-          <label for="password">Parol</label>
+          <label for="password" data-i18n="password">Parol</label>
           <div class="password-wrap">
             <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128">
-            <button id="toggleLoginPassword" class="icon-btn password-toggle" type="button" aria-label="Parolni ko‘rsatish" title="Parolni ko‘rsatish">👁</button>
+            <button id="toggleLoginPassword" class="icon-btn password-toggle" type="button" aria-label="Parolni ko‘rsatish" title="Parolni ko‘rsatish" data-i18n-aria="showPassword" data-i18n-title="showPassword">👁</button>
           </div>
-          <small id="capsLockWarning" class="caps-warning hidden">Caps Lock yoqilgan</small>
+          <small id="capsLockWarning" class="caps-warning hidden" data-i18n="capsLock">Caps Lock yoqilgan</small>
           <small class="field-error" data-error-for="password"></small>
         </div>
         <div id="loginMessage" class="form-message" role="alert" aria-live="polite"></div>
-        <button id="loginBtn" type="submit" class="btn btn-primary btn-block">Kirish</button>
+        <button id="loginBtn" type="submit" class="btn btn-primary btn-block" data-i18n="loginButton">Kirish</button>
       </form>
     </div>
   </section>
@@ -40,7 +41,7 @@
         <div class="brand-mark">DMED DATA</div>
         <small id="roleText"></small>
       </div>
-      <nav class="nav" aria-label="Asosiy navigatsiya">
+      <nav class="nav">
         <button class="nav-btn active" type="button" data-tab="dashboard">🏠 <span data-i18n="home">Bosh sahifa</span></button>
         <button class="nav-btn" type="button" data-tab="staff">👥 <span data-i18n="staff">Xodimlar</span></button>
         <button id="institutionsNav" class="nav-btn" type="button" data-tab="institutions">🏥 <span data-i18n="institutions">Muassasalar</span></button>
@@ -54,8 +55,8 @@
     <main class="main-content">
       <header class="topbar">
         <div>
-          <h1 id="pageTitle">Bosh sahifa</h1>
-          <p>DMED · Buxoro viloyati</p>
+          <h1 id="pageTitle" data-i18n="home">Bosh sahifa</h1>
+          <p data-i18n="provinceSubtitle">DMED · Buxoro viloyati</p>
         </div>
         <div class="topbar-actions">
           <span id="userChip" class="user-chip"></span>
@@ -65,17 +66,17 @@
 
       <section id="dashboardView" class="view">
         <div class="stats-grid">
-          <article class="stat-card"><span>Jami xodimlar</span><strong id="statStaff">0</strong></article>
-          <article class="stat-card"><span>Muassasalar</span><strong id="statInstitutions">0</strong></article>
-          <article class="stat-card"><span>Topshirgan</span><strong id="statDone">0</strong></article>
+          <article class="stat-card"><span data-i18n="statStaff">Jami xodimlar</span><strong id="statStaff">0</strong></article>
+          <article class="stat-card"><span data-i18n="statInstitutions">Muassasalar</span><strong id="statInstitutions">0</strong></article>
+          <article class="stat-card"><span data-i18n="statDone">Topshirgan</span><strong id="statDone">0</strong></article>
         </div>
         <div id="submitPanel" class="panel hidden">
           <div class="panel-row">
             <div>
-              <h2>Ma’lumotlarni yakunlash</h2>
-              <p>Barcha xodimlarni tekshirib, boshqarmaga topshiring.</p>
+              <h2 data-i18n="submitPanelTitle">Ma’lumotlarni yakunlash</h2>
+              <p data-i18n="submitPanelText">Barcha xodimlarni tekshirib, boshqarmaga topshiring.</p>
             </div>
-            <button id="submitDataBtn" class="btn btn-primary" type="button">Topshirish</button>
+            <button id="submitDataBtn" class="btn btn-primary" type="button" data-i18n="submitButton">Topshirish</button>
           </div>
         </div>
       </section>
@@ -84,30 +85,30 @@
         <div class="panel">
           <div id="staffScopeBar" class="scope-bar hidden">
             <div>
-              <span class="scope-label">Tanlangan muassasa</span>
+              <span class="scope-label" data-i18n="selectedInstitution">Tanlangan muassasa</span>
               <strong id="staffScopeName"></strong>
               <span id="staffScopeCount" class="badge"></span>
             </div>
-            <button id="clearStaffScopeBtn" class="btn btn-secondary" type="button">Barcha xodimlar</button>
+            <button id="clearStaffScopeBtn" class="btn btn-secondary" type="button" data-i18n="allStaff">Barcha xodimlar</button>
           </div>
           <div class="toolbar">
             <div class="search-wrap">
-              <label class="sr-only" for="staffSearch">Xodimlarni qidirish</label>
-              <input id="staffSearch" type="search" placeholder="F.I.O., PINFL, muassasa yoki tuman bo‘yicha qidirish...">
+              <label class="sr-only" for="staffSearch" data-i18n="searchStaff">Xodimlarni qidirish</label>
+              <input id="staffSearch" type="search" placeholder="F.I.O., PINFL, muassasa yoki tuman bo‘yicha qidirish..." data-i18n-placeholder="searchStaffPlaceholder">
             </div>
             <div class="toolbar-actions">
-              <button id="exportStaffBtn" class="btn btn-secondary" type="button">⬇ Excel</button>
-              <button id="importStaffBtn" class="btn btn-secondary hidden" type="button">⬆ Excel yuklash</button>
-              <button id="addStaffBtn" class="btn btn-primary" type="button">+ Xodim qo‘shish</button>
+              <button id="exportStaffBtn" class="btn btn-secondary" type="button" data-i18n="exportExcel">⬇ Excel</button>
+              <button id="importStaffBtn" class="btn btn-secondary hidden" type="button" data-i18n="importExcel">⬆ Excel yuklash</button>
+              <button id="addStaffBtn" class="btn btn-primary" type="button" data-i18n="addStaff">+ Xodim qo‘shish</button>
             </div>
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>№</th><th>Tuman</th><th>Muassasa</th><th>F.I.O.</th><th>PINFL</th><th>Lavozim</th><th>Mutaxassislik</th><th>Stavkasi (o‘rindosh, asosiy)</th><th>Telefon</th><th>Amallar</th></tr></thead>
+              <thead><tr><th data-i18n="colNo">№</th><th data-i18n="colDistrict">Tuman</th><th data-i18n="colInstitution">Muassasa</th><th data-i18n="colFullName">F.I.O.</th><th data-i18n="colPinfl">PINFL</th><th data-i18n="colPosition">Lavozim</th><th data-i18n="colSpecialty">Mutaxassislik</th><th data-i18n="colEmployment">Stavkasi (o‘rindosh, asosiy)</th><th data-i18n="colPhone">Telefon</th><th data-i18n="colActions">Amallar</th></tr></thead>
               <tbody id="staffBody"></tbody>
             </table>
           </div>
-          <div id="staffEmpty" class="empty-state hidden">Bu bo‘limda xodimlar topilmadi.</div>
+          <div id="staffEmpty" class="empty-state hidden" data-i18n="staffEmpty">Bu bo‘limda xodimlar topilmadi.</div>
         </div>
       </section>
 
@@ -115,28 +116,28 @@
         <div class="panel">
           <div class="toolbar">
             <div>
-              <h2>Muassasalar nazorati</h2>
-              <p class="muted">Muassasa nomini bosib, o‘sha muassasa kiritgan xodimlarni ko‘ring.</p>
+              <h2 data-i18n="institutionsTitle">Muassasalar nazorati</h2>
+              <p class="muted" data-i18n="institutionsHelp">Muassasa nomini bosib, o‘sha muassasa kiritgan xodimlarni ko‘ring.</p>
             </div>
-            <button id="addInstitutionBtn" class="btn btn-primary" type="button">+ Muassasa qo‘shish</button>
+            <button id="addInstitutionBtn" class="btn btn-primary" type="button" data-i18n="addInstitution">+ Muassasa qo‘shish</button>
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>№</th><th>Tuman</th><th>Muassasa</th><th>Turi</th><th>Xodimlar</th><th>Holati</th><th>Telefon</th><th>Amallar</th></tr></thead>
+              <thead><tr><th data-i18n="colNo">№</th><th data-i18n="colDistrict">Tuman</th><th data-i18n="colInstitution">Muassasa</th><th data-i18n="colType">Turi</th><th data-i18n="colStaffCount">Xodimlar</th><th data-i18n="colStatus">Holati</th><th data-i18n="colPhone">Telefon</th><th data-i18n="colActions">Amallar</th></tr></thead>
               <tbody id="institutionsBody"></tbody>
             </table>
           </div>
-          <div id="institutionsEmpty" class="empty-state hidden">Muassasalar topilmadi.</div>
+          <div id="institutionsEmpty" class="empty-state hidden" data-i18n="institutionsEmpty">Muassasalar topilmadi.</div>
         </div>
       </section>
 
       <section id="reportsView" class="view hidden">
         <div class="panel report-card">
           <div>
-            <h2>Hisobotlar</h2>
-            <p>Yig‘ilgan ma’lumotlarni Excel (.xlsx) formatida yuklab oling.</p>
+            <h2 data-i18n="reportsTitle">Hisobotlar</h2>
+            <p data-i18n="reportsText">Yig‘ilgan ma’lumotlarni Excel (.xlsx) formatida yuklab oling.</p>
           </div>
-          <button id="reportExportBtn" class="btn btn-primary" type="button">⬇ Excel hisobot</button>
+          <button id="reportExportBtn" class="btn btn-primary" type="button" data-i18n="exportReport">⬇ Excel hisobot</button>
         </div>
       </section>
     </main>
@@ -149,6 +150,7 @@
 
   <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
+  <script src="/i18n.js" defer></script>
   <script src="/ui.js" defer></script>
   <script src="/auth.js" defer></script>
   <script src="/staff.js" defer></script>
