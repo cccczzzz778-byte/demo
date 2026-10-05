@@ -36,3 +36,10 @@ test('keyboard and focus contracts exist',()=>{
   assert.match(auth,/loginBusy/);
   assert.match(auth,/getModifierState\(['"]CapsLock['"]\)/);
 });
+
+test('Escape and backdrop can cancel an open confirmation dialog',()=>{
+  const ui=read('ui.js');
+  assert.match(ui,/function cancelOpenDialog/);
+  assert.match(ui,/\[data-confirm-cancel\]/);
+  assert.match(ui,/cancel\.click\(\)/);
+});
