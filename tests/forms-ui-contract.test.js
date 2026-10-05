@@ -5,11 +5,14 @@ const path=require('node:path');
 const root=path.join(__dirname,'..','public');
 function read(name){return fs.readFileSync(path.join(root,name),'utf8');}
 
-test('staff form supports professional keyboard submission and numeric employment',()=>{
+test('staff form supports keyboard submission and employment type selection',()=>{
   const js=read('staff.js');
   assert.match(js,/id=["']staffForm["']/);
   assert.match(js,/addEventListener\(['"]submit['"]/);
-  assert.match(js,/inputmode=["']decimal["']/);
+  assert.match(js,/id=["']staffEmployment["'][^>]*name=["']employment["'][^>]*>/);
+  assert.match(js,/<option value=["']asosiy["']/);
+  assert.match(js,/<option value=["']orindosh["']/);
+  assert.doesNotMatch(js,/inputmode=["']decimal["']/);
   assert.match(js,/maxlength=["']14["']/);
 });
 
