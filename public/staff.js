@@ -8,12 +8,21 @@
     required_position:'Lavozimni kiriting.',
     too_long_position:'Lavozim juda uzun.',
     too_long_specialty:'Mutaxassislik juda uzun.',
-    invalid_employment:'Stavkani son ko‘rinishida kiriting: 1, 0,5, 0,25.',
+    invalid_employment:'Stavkani tanlang: asosiy yoki o‘rindosh.',
     invalid_phone:'Telefon raqami formatini tekshiring.',
     too_long_note:'Izoh juda uzun.',
     duplicate_pinfl:'Bu PINFL avval bazaga kiritilgan.',
     institution_not_found:'Muassasa topilmadi.'
   };
+
+  function normalizeEmployment(value){
+    const raw=String(value||'').trim().toLowerCase();
+    if(['asosiy','асосий','1','1.0'].includes(raw))return 'asosiy';
+    if(["o'rindosh",'o‘rindosh','orindosh','ўриндош','уриндош'].includes(raw))return 'orindosh';
+    if(/^\d+(?:[.,]\d+)?$/.test(raw))return 'orindosh';
+    return '';
+  }
+  function employmentLabel(value){return normalizeEmployment(value)==='orindosh'?'O‘rindosh':'Asosiy';}
 
   function scopedStaff(){
     const state=DMED.state;
@@ -23,7 +32,7 @@
     }
     const q=(document.getElementById('staffSearch')?.value||'').trim().toLowerCase();
     if(q){
-      rows=rows.filter(row=>[row.full_name,row.pinfl,row.institution,row.district,row.position,row.specialty,row.phone].join(' ').toLowerCase().includes(q));
+      rows=rows.filter(row=>[row.full_name,row.pinfl,row.institution,row.district,row.position,row.specialty,row.phone,employmentLabel(row.employment)].join(' ').toLowerCase().includes(q));
     }
     return rows;
   }
@@ -62,7 +71,7 @@
         <td>${esc(row.pinfl)}</td>
         <td class="wrap">${esc(row.position)}</td>
         <td class="wrap">${esc(row.specialty)}</td>
-        <td>${esc(row.employment)}</td>
+        <td>${esc(employmentLabel(row.employment))}</td>
         <td>${esc(row.phone)}</td>
         <td><div class="actions">
           <button class="icon-btn" type="button" data-staff-action="edit" data-id="${row.id}" aria-label="Xodimni tahrirlash" title="Xodimni tahrirlash">✏️</button>
@@ -72,13 +81,6 @@
     `).join('');
     empty.classList.toggle('hidden',rows.length!==0);
     updateScopeBar();
-  }
-
-  function normalizeEmployment(value){
-    const raw=String(value||'').trim().replace(/\s+/g,'').replace(',','.');
-    if(!/^\d+(?:\.\d+)?$/.test(raw))return null;
-    const n=Number(raw);
-    return Number.isFinite(n)&&n>0&&n<=10?String(n):null;
   }
 
   function validateForm(form){
@@ -92,8 +94,8 @@
     if(!/^\d{14}$/.test(pinfl)){DMED.ui.fieldError(form,'pinfl','PINFL 14 ta raqam bo‘lishi kerak.');return null;}
     const position=String(data.get('position')||'').trim();
     if(!position){DMED.ui.fieldError(form,'position','Lavozimni kiriting.');return null;}
-    const employment=normalizeEmployment(data.get('employment'));
-    if(!employment){DMED.ui.fieldError(form,'employment','Masalan: 1, 0,5 yoki 0,25.');return null;}
+    const employment=String(data.get('employment')||'').trim();
+    if(!['asosiy','orindosh'].includes(employment)){DMED.ui.fieldError(form,'employment','Asosiy yoki o‘rindoshni tanlang.');return null;}
     const phone=String(data.get('phone')||'').trim();
     if(phone&&!/^[+()\d\s.-]{5,32}$/.test(phone)){DMED.ui.fieldError(form,'phone','Telefon raqamini tekshiring.');return null;}
     return {
@@ -120,6 +122,7 @@
   function openForm(item=null,opener=null){
     const esc=DMED.ui.escapeHtml;
     const selectedId=item?.institution_id||DMED.state.selectedInstitutionId||DMED.state.institutions[0]?.id||'';
+    const selectedEmployment=normalizeEmployment(item?.employment)||'asosiy';
     const institutionField=DMED.state.me?.role==='admin'?`
       <div class="form-field"><label for="staffInstitution">Muassasa</label><select id="staffInstitution" name="institutionId" required>
         <option value="">Muassasani tanlang</option>
@@ -134,7 +137,7 @@
           <div class="form-field"><label for="staffPinfl">PINFL</label><input id="staffPinfl" name="pinfl" required maxlength="14" inputmode="numeric" autocomplete="off" value="${esc(item?.pinfl||'')}"><small class="field-error" data-error-for="pinfl"></small></div>
           <div class="form-field"><label for="staffPosition">Lavozim</label><input id="staffPosition" name="position" required maxlength="120" value="${esc(item?.position||'')}"><small class="field-error" data-error-for="position"></small></div>
           <div class="form-field"><label for="staffSpecialty">Mutaxassislik</label><input id="staffSpecialty" name="specialty" maxlength="120" value="${esc(item?.specialty||'')}"><small class="field-error" data-error-for="specialty"></small></div>
-          <div class="form-field"><label for="staffEmployment">Stavka</label><input id="staffEmployment" name="employment" required inputmode="decimal" placeholder="Masalan: 1 yoki 0,5" value="${esc(item?.employment||'1')}"><small class="field-error" data-error-for="employment"></small></div>
+          <div class="form-field"><label for="staffEmployment">Stavkasi (o‘rindosh, asosiy)</label><select id="staffEmployment" name="employment" required><option value="asosiy" ${selectedEmployment==='asosiy'?'selected':''}>Asosiy</option><option value="orindosh" ${selectedEmployment==='orindosh'?'selected':''}>O‘rindosh</option></select><small class="field-error" data-error-for="employment"></small></div>
           <div class="form-field"><label for="staffPhone">Telefon</label><input id="staffPhone" name="phone" maxlength="32" placeholder="+998 90 123 45 67" value="${esc(item?.phone||'')}"><small class="field-error" data-error-for="phone"></small></div>
         </div>
         <div class="form-field"><label for="staffNote">Izoh</label><textarea id="staffNote" name="note" maxlength="500">${esc(item?.note||'')}</textarea><small class="field-error" data-error-for="note"></small></div>
