@@ -1,11 +1,11 @@
 {
   "name":"dmed-medical-staff-production",
-  "version":"3.0.0",
+  "version":"3.1.0",
   "private":true,
   "main":"server.js",
   "scripts":{
     "start":"node seed-test.js && node server.js",
-    "test":"node --check server.js && node --check lib/validation.js && node --check lib/security.js && node --check lib/staff-import.js && node --check lib/staff-scope.js && node --check public/ui.js && node --check public/auth.js && node --check public/staff.js && node --check public/institutions.js && node --check public/import.js && node --check public/reports.js && node --check public/app.js && node --test tests/*.test.js"
+    "test":"node --check server.js && node --check lib/validation.js && node --check lib/security.js && node --check lib/staff-import.js && node --check lib/staff-scope.js && node --check public/i18n.js && node --check public/ui.js && node --check public/auth.js && node --check public/staff.js && node --check public/institutions.js && node --check public/import.js && node --check public/reports.js && node --check public/app.js && node --test tests/*.test.js"
   },
   "engines":{"node":">=20"},
   "dependencies":{
