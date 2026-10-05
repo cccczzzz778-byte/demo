@@ -15,8 +15,8 @@
     importPayload=null;
     DMED.ui.openModal(`
       <div class="modal-header"><h2 id="modalTitle">Excel orqali xodimlarni yuklash</h2><button class="icon-btn" type="button" data-close-import aria-label="Yopish" title="Yopish">✕</button></div>
-      <p class="muted">Ustunlar: №, Tuman, Muassasa nomi, Tipi, Xodimning F.I.O., PINFL, Lavozimi, Mutaxassisligi, Stavkasi, Telefon raqami, Izoh.</p>
-      <p class="muted">Stavka: 1, 0,5, 0,25 yoki 0.5. PINFL 14 ta raqam bo‘lishi shart. Muassasa ma’lumoti kabinetdan olinadi.</p>
+      <p class="muted">Ustunlar: №, Tuman, Muassasa nomi, Tipi, Xodimning F.I.O., PINFL, Lavozimi, Mutaxassisligi, Stavkasi (o‘rindosh, asosiy), Telefon raqami, Izoh.</p>
+      <p class="muted">Stavka faqat “asosiy” yoki “o‘rindosh” ko‘rinishida yoziladi. PINFL 14 ta raqam bo‘lishi shart. Muassasa ma’lumoti kabinetdan olinadi.</p>
       <p><a class="btn btn-secondary" href="/api/import/template.xlsx">⬇ Excel shablon</a></p>
       <form id="importForm" novalidate>
         <div class="form-field"><label for="importFile">Excel fayl (.xlsx yoki .xls)</label><input id="importFile" name="file" type="file" accept=".xlsx,.xls" required><small class="field-error" data-error-for="file"></small></div>
