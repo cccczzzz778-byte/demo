@@ -32,6 +32,7 @@ test('server uses centralized validators for mutable records',()=>{
 });
 
 test('server serves static frontend directly without source rewriting',()=>{
-  assert.doesNotMatch(server,/readFileSync\(.*public.*index\.html/);
-  assert.doesNotMatch(server,/\.replace\(/);
+  assert.doesNotMatch(server,/fs\.readFileSync|readFileSync\(.*public.*index\.html/);
+  assert.doesNotMatch(server,/importUiScript|patch-ui\.js|patch-server\.js/);
+  assert.match(server,/express\.static\(path\.join\(__dirname,'public'\)/);
 });
