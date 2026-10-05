@@ -6,7 +6,7 @@ const jwt=require('jsonwebtoken');
 const bcrypt=require('bcryptjs');
 const XLSX=require('xlsx');
 const {Pool}=require('pg');
-const {TEMPLATE_HEADERS,normalizeStaffRows}=require('./lib/staff-import');
+const {TEMPLATE_HEADERS,normalizeStaffRows,normalizeEmploymentRate}=require('./lib/staff-import');
 
 const app=express();
 const PORT=process.env.PORT||3000;
@@ -22,7 +22,7 @@ const importUiScript=`
 let staffImportPayload=null;
 function fileAsBase64(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]||'');r.onerror=reject;r.readAsDataURL(file)})}
 function openStaffImport(){
-  modalBox.innerHTML='<h2>Excel orqali xodimlarni yuklash</h2><p><b>Talab qilinadigan ustunlar:</b><br>№, Tuman, Muassasa nomi, Tipi, Xodimning F.I.O., PINFL, Lavozimi, Mutaxassisligi, Stavkasi (o‘rindosh, asosiy), Telefon raqami, Izoh.</p><p style="color:#687572">Tuman, muassasa nomi va tipi kabinetga biriktirilgan ma’lumotdan olinadi. PINFL 14 ta raqam bo‘lishi shart.</p><p><a class="outline" style="display:inline-block;text-decoration:none" href="/api/import/template.xlsx">⬇ Excel shablonni yuklab olish</a></p><div class="field"><label>Excel fayl (.xlsx yoki .xls)</label><input id="staffImportFile" type="file" accept=".xlsx,.xls"></div><div id="importMsg" class="msg"></div><div id="importSummary"></div><div class="right"><button class="outline" onclick="closeM()">Bekor</button><button class="outline" onclick="previewStaffImport()">Tekshirish</button><button id="confirmImportBtn" class="primary hidden" onclick="confirmStaffImport()">Bazaga yuklash</button></div>';
+  modalBox.innerHTML='<h2>Excel orqali xodimlarni yuklash</h2><p><b>Talab qilinadigan ustunlar:</b><br>№, Tuman, Muassasa nomi, Tipi, Xodimning F.I.O., PINFL, Lavozimi, Mutaxassisligi, Stavkasi, Telefon raqami, Izoh.</p><p style="color:#687572">Stavka son ko‘rinishida yoziladi: 1, 0,5, 0,25 va hokazo. 0.5 ko‘rinishi ham qabul qilinadi. Tuman, muassasa nomi va tipi kabinetga biriktirilgan ma’lumotdan olinadi. PINFL 14 ta raqam bo‘lishi shart.</p><p><a class="outline" style="display:inline-block;text-decoration:none" href="/api/import/template.xlsx">⬇ Excel shablonni yuklab olish</a></p><div class="field"><label>Excel fayl (.xlsx yoki .xls)</label><input id="staffImportFile" type="file" accept=".xlsx,.xls"></div><div id="importMsg" class="msg"></div><div id="importSummary"></div><div class="right"><button class="outline" onclick="closeM()">Bekor</button><button class="outline" onclick="previewStaffImport()">Tekshirish</button><button id="confirmImportBtn" class="primary hidden" onclick="confirmStaffImport()">Bazaga yuklash</button></div>';
   modal.classList.remove('hidden');
 }
 async function previewStaffImport(){
@@ -57,12 +57,16 @@ app.get('/',(_,res)=>{
   h=h.replace("async function boot(){me=await req('/api/me');login.classList.add('hidden');app.classList.remove('hidden');","async function boot(){me=await req('/api/me');document.getElementById('login').classList.add('hidden');document.getElementById('app').classList.remove('hidden');");
   h=h.replace('<button class="outline" onclick="downloadExcel()">⬇ Excel</button> <button class="primary" onclick="openStaff()"', '<button class="outline" onclick="downloadExcel()">⬇ Excel</button> <button id="importStaffBtn" class="outline" onclick="openStaffImport()">⬆ Excel yuklash</button> <button class="primary" onclick="openStaff()"');
   h=h.replace("submitPanel.classList.toggle('hidden',me.role!=='institution');await refresh()","submitPanel.classList.toggle('hidden',me.role!=='institution');document.getElementById('importStaffBtn')?.classList.toggle('hidden',me.role!=='institution');await refresh()");
+  h=h.replace('<th data-t="specialty">Mutaxassislik</th><th data-t="phone">Telefon</th>','<th data-t="specialty">Mutaxassislik</th><th>Stavka</th><th data-t="phone">Telefon</th>');
+  h=h.replace('<td>${esc(x.specialty)}</td><td>${esc(x.phone)}</td>','<td>${esc(x.specialty)}</td><td>${esc(x.employment)}</td><td>${esc(x.phone)}</td>');
+  h=h.replace('<div class="field"><label>Stavka</label><select id="fEmp"><option value="asosiy">Asosiy</option><option value="orindosh">O‘rindosh</option></select></div>',"<div class=\"field\"><label>Stavka</label><input id=\"fEmp\" inputmode=\"decimal\" placeholder=\"Masalan: 1 yoki 0,5\" value=\"${esc(x?.employment||'1')}\"></div>");
+  h=h.replace("catch(e){mMsg.textContent=e.message==='duplicate_pinfl'?'Bu PINFL avval kiritilgan':'Ma’lumotlarni tekshiring'}","catch(e){mMsg.textContent=e.message==='duplicate_pinfl'?'Bu PINFL avval kiritilgan':e.message==='invalid_employment'?'Stavkani son ko‘rinishida kiriting: 1, 0,5, 0,25':'Ma’lumotlarni tekshiring'}");
   h=h.replace('</body>',importUiScript+'</body>');
   res.type('html').send(h);
 });
 
 async function init(){
-  await pool.query(`CREATE TABLE IF NOT EXISTS institutions(id SERIAL PRIMARY KEY,district TEXT NOT NULL,name TEXT NOT NULL UNIQUE,type TEXT NOT NULL DEFAULT 'birlamchi',status TEXT NOT NULL DEFAULT 'pending',phone TEXT DEFAULT '',note TEXT DEFAULT '',created_at TIMESTAMPTZ DEFAULT NOW());CREATE TABLE IF NOT EXISTS users(id SERIAL PRIMARY KEY,username TEXT UNIQUE NOT NULL,password_hash TEXT NOT NULL,role TEXT NOT NULL CHECK(role IN ('admin','institution')),institution_id INTEGER REFERENCES institutions(id) ON DELETE CASCADE,created_at TIMESTAMPTZ DEFAULT NOW());CREATE TABLE IF NOT EXISTS staff(id SERIAL PRIMARY KEY,institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,district TEXT NOT NULL,institution TEXT NOT NULL,type TEXT NOT NULL,full_name TEXT NOT NULL,pinfl VARCHAR(14) UNIQUE NOT NULL,position TEXT NOT NULL,specialty TEXT DEFAULT '',employment TEXT DEFAULT 'asosiy',phone TEXT DEFAULT '',note TEXT DEFAULT '',created_at TIMESTAMPTZ DEFAULT NOW(),updated_at TIMESTAMPTZ DEFAULT NOW());`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS institutions(id SERIAL PRIMARY KEY,district TEXT NOT NULL,name TEXT NOT NULL UNIQUE,type TEXT NOT NULL DEFAULT 'birlamchi',status TEXT NOT NULL DEFAULT 'pending',phone TEXT DEFAULT '',note TEXT DEFAULT '',created_at TIMESTAMPTZ DEFAULT NOW());CREATE TABLE IF NOT EXISTS users(id SERIAL PRIMARY KEY,username TEXT UNIQUE NOT NULL,password_hash TEXT NOT NULL,role TEXT NOT NULL CHECK(role IN ('admin','institution')),institution_id INTEGER REFERENCES institutions(id) ON DELETE CASCADE,created_at TIMESTAMPTZ DEFAULT NOW());CREATE TABLE IF NOT EXISTS staff(id SERIAL PRIMARY KEY,institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,district TEXT NOT NULL,institution TEXT NOT NULL,type TEXT NOT NULL,full_name TEXT NOT NULL,pinfl VARCHAR(14) UNIQUE NOT NULL,position TEXT NOT NULL,specialty TEXT DEFAULT '',employment TEXT DEFAULT '1',phone TEXT DEFAULT '',note TEXT DEFAULT '',created_at TIMESTAMPTZ DEFAULT NOW(),updated_at TIMESTAMPTZ DEFAULT NOW());ALTER TABLE staff ALTER COLUMN employment SET DEFAULT '1';UPDATE staff SET employment='1' WHERE lower(coalesce(employment,'')) IN ('','asosiy');UPDATE staff SET employment='0.5' WHERE lower(coalesce(employment,''))='orindosh';`);
   if(process.env.ADMIN_USERNAME&&process.env.ADMIN_PASSWORD){
     const h=await bcrypt.hash(process.env.ADMIN_PASSWORD,12);
     await pool.query(`INSERT INTO users(username,password_hash,role) VALUES($1,$2,'admin') ON CONFLICT(username) DO UPDATE SET password_hash=EXCLUDED.password_hash`,[process.env.ADMIN_USERNAME,h]);
@@ -97,7 +101,7 @@ async function validateImportRows(rows){
 }
 function exportRows(rows){return rows.map((x,i)=>({
   '№':i+1,'Туман':x.district,'Муассаса номи':x.institution,'Типи':x.type,'Ходимнинг Ф.И.О.':x.full_name,
-  'ПИНФЛ':x.pinfl,'Лавозими':x.position,'Мутахассислиги':x.specialty,'Ставкаси (ўриндош, асосий)':x.employment,
+  'ПИНФЛ':x.pinfl,'Лавозими':x.position,'Мутахассислиги':x.specialty,'Ставкаси':x.employment,
   'Телефон рақами':x.phone,'Изоҳ':x.note
 }))}
 
@@ -112,19 +116,20 @@ app.put('/api/institutions/:id',auth,admin,async(req,res)=>{const b=req.body||{}
 app.delete('/api/institutions/:id',auth,admin,async(req,res)=>{await pool.query('DELETE FROM institutions WHERE id=$1',[req.params.id]);res.json({ok:true})});
 app.post('/api/institutions/:id/account',auth,admin,async(req,res)=>{const {username,password}=req.body||{};if(!username||String(password||'').length<8)return res.status(400).json({error:'weak_credentials'});const h=await bcrypt.hash(password,12);try{await pool.query(`INSERT INTO users(username,password_hash,role,institution_id) VALUES($1,$2,'institution',$3) ON CONFLICT(username) DO UPDATE SET password_hash=EXCLUDED.password_hash,institution_id=EXCLUDED.institution_id`,[username,h,req.params.id]);res.json({ok:true})}catch{res.status(400).json({error:'account_failed'})}});
 app.get('/api/staff',auth,async(req,res)=>{const r=req.user.role==='admin'?await pool.query('SELECT * FROM staff ORDER BY created_at DESC'):await pool.query('SELECT * FROM staff WHERE institution_id=$1 ORDER BY created_at DESC',[req.user.institutionId]);res.json(r.rows)});
-app.post('/api/staff',auth,async(req,res)=>{const b=req.body||{};const iid=req.user.role==='admin'?Number(b.institutionId):req.user.institutionId;if(!iid||!b.fullName||!b.position||!/^\d{14}$/.test(String(b.pinfl||'')))return res.status(400).json({error:'invalid'});const iq=await pool.query('SELECT * FROM institutions WHERE id=$1',[iid]);const ins=iq.rows[0];if(!ins)return res.status(404).json({error:'institution_not_found'});try{const r=await pool.query('INSERT INTO staff(institution_id,district,institution,type,full_name,pinfl,position,specialty,employment,phone,note) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *',[iid,ins.district,ins.name,ins.type,b.fullName,b.pinfl,b.position,b.specialty||'',b.employment||'asosiy',b.phone||'',b.note||'']);res.status(201).json(r.rows[0])}catch{res.status(409).json({error:'duplicate_pinfl'})}});
-app.put('/api/staff/:id',auth,async(req,res)=>{const b=req.body||{};const where=req.user.role==='admin'?'id=$9':'id=$9 AND institution_id=$10',args=[b.fullName,b.pinfl,b.position,b.specialty||'',b.employment||'asosiy',b.phone||'',b.note||'',new Date(),req.params.id];if(req.user.role!=='admin')args.push(req.user.institutionId);if(!b.fullName||!b.position||!/^\d{14}$/.test(String(b.pinfl||'')))return res.status(400).json({error:'invalid'});try{const r=await pool.query(`UPDATE staff SET full_name=$1,pinfl=$2,position=$3,specialty=$4,employment=$5,phone=$6,note=$7,updated_at=$8 WHERE ${where} RETURNING *`,args);if(!r.rowCount)return res.status(404).json({error:'not_found'});res.json(r.rows[0])}catch{res.status(409).json({error:'duplicate_pinfl'})}});
+app.post('/api/staff',auth,async(req,res)=>{const b=req.body||{};const iid=req.user.role==='admin'?Number(b.institutionId):req.user.institutionId;const employment=normalizeEmploymentRate(b.employment);if(!iid||!b.fullName||!b.position||!/^\d{14}$/.test(String(b.pinfl||'')))return res.status(400).json({error:'invalid'});if(!employment)return res.status(400).json({error:'invalid_employment'});const iq=await pool.query('SELECT * FROM institutions WHERE id=$1',[iid]);const ins=iq.rows[0];if(!ins)return res.status(404).json({error:'institution_not_found'});try{const r=await pool.query('INSERT INTO staff(institution_id,district,institution,type,full_name,pinfl,position,specialty,employment,phone,note) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *',[iid,ins.district,ins.name,ins.type,b.fullName,b.pinfl,b.position,b.specialty||'',employment,b.phone||'',b.note||'']);res.status(201).json(r.rows[0])}catch{res.status(409).json({error:'duplicate_pinfl'})}});
+app.put('/api/staff/:id',auth,async(req,res)=>{const b=req.body||{};const employment=normalizeEmploymentRate(b.employment);const where=req.user.role==='admin'?'id=$9':'id=$9 AND institution_id=$10',args=[b.fullName,b.pinfl,b.position,b.specialty||'',employment,b.phone||'',b.note||'',new Date(),req.params.id];if(req.user.role!=='admin')args.push(req.user.institutionId);if(!b.fullName||!b.position||!/^\d{14}$/.test(String(b.pinfl||'')))return res.status(400).json({error:'invalid'});if(!employment)return res.status(400).json({error:'invalid_employment'});try{const r=await pool.query(`UPDATE staff SET full_name=$1,pinfl=$2,position=$3,specialty=$4,employment=$5,phone=$6,note=$7,updated_at=$8 WHERE ${where} RETURNING *`,args);if(!r.rowCount)return res.status(404).json({error:'not_found'});res.json(r.rows[0])}catch{res.status(409).json({error:'duplicate_pinfl'})}});
 app.delete('/api/staff/:id',auth,async(req,res)=>{const r=req.user.role==='admin'?await pool.query('DELETE FROM staff WHERE id=$1',[req.params.id]):await pool.query('DELETE FROM staff WHERE id=$1 AND institution_id=$2',[req.params.id,req.user.institutionId]);if(!r.rowCount)return res.status(404).json({error:'not_found'});res.json({ok:true})});
 app.post('/api/submit',auth,institution,async(req,res)=>{await pool.query(`UPDATE institutions SET status='done' WHERE id=$1`,[req.user.institutionId]);res.json({ok:true})});
 
 app.get('/api/import/template.xlsx',auth,institution,(req,res)=>{
   const ws=XLSX.utils.aoa_to_sheet([TEMPLATE_HEADERS]);
-  ws['!cols']=[{wch:6},{wch:20},{wch:34},{wch:16},{wch:30},{wch:18},{wch:24},{wch:24},{wch:28},{wch:20},{wch:30}];
+  ws['!cols']=[{wch:6},{wch:20},{wch:34},{wch:16},{wch:30},{wch:18},{wch:24},{wch:24},{wch:18},{wch:20},{wch:30}];
   const help=XLSX.utils.aoa_to_sheet([
     ['Yo‘riqnoma'],
     ['PINFL','14 ta raqam bo‘lishi shart.'],
     ['F.I.O.','Majburiy maydon.'],
     ['Lavozimi','Majburiy maydon.'],
+    ['Stavka','Son ko‘rinishida yozing: 1, 0,5, 0,25. Nuqta bilan 0.5 ham qabul qilinadi.'],
     ['Tuman / Muassasa / Tip','Kabinetga biriktirilgan ma’lumot avtomatik qo‘llanadi.'],
     ['Maksimal qator','5000 ta xodim.']
   ]);
@@ -155,7 +160,7 @@ app.post('/api/import/staff',auth,institution,async(req,res)=>{
 });
 app.get('/api/export/staff.xlsx',auth,async(req,res)=>{
   const rows=req.user.role==='admin'?(await pool.query('SELECT district,institution,type,full_name,pinfl,position,specialty,employment,phone,note FROM staff ORDER BY district,institution,full_name')).rows:(await pool.query('SELECT district,institution,type,full_name,pinfl,position,specialty,employment,phone,note FROM staff WHERE institution_id=$1 ORDER BY full_name',[req.user.institutionId])).rows;
-  const ws=XLSX.utils.json_to_sheet(exportRows(rows),{header:TEMPLATE_HEADERS});ws['!cols']=[{wch:6},{wch:20},{wch:34},{wch:16},{wch:30},{wch:18},{wch:24},{wch:24},{wch:28},{wch:20},{wch:30}];
+  const ws=XLSX.utils.json_to_sheet(exportRows(rows),{header:TEMPLATE_HEADERS});ws['!cols']=[{wch:6},{wch:20},{wch:34},{wch:16},{wch:30},{wch:18},{wch:24},{wch:24},{wch:18},{wch:20},{wch:30}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Xodimlar');const out=XLSX.write(wb,{type:'buffer',bookType:'xlsx'});
   res.setHeader('Content-Disposition','attachment; filename="tibbiyot_xodimlari.xlsx"');res.type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet').send(out);
 });
