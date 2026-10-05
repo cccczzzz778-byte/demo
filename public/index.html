@@ -1,65 +1,52 @@
 <!doctype html>
 <html lang="uz">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Buxoro SSB — Yagona KPI platforma</title>
-<style>
-:root{--b:#0a5db8;--bg:#f2f6fb;--ink:#12233c;--muted:#6d7d92;--line:#dce6f0;--g:#129b78;--p:#7257d9;--o:#ef7a2e}
-*{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink)}
-.app{min-height:100vh;display:grid;grid-template-columns:240px 1fr}.side{background:linear-gradient(180deg,#0a315f,#0a579f);color:#fff;padding:22px 15px}
-.brand{font-weight:800;font-size:17px;padding:8px 10px 24px}.brand small{display:block;font-weight:400;color:#d9e9f8;margin-top:5px}
-nav{display:grid;gap:8px}button.nav{border:0;background:transparent;color:#dceafb;text-align:left;padding:12px;border-radius:11px;font-weight:700;cursor:pointer}button.nav.active,button.nav:hover{background:#ffffff18;color:#fff}
-main{padding:24px}.top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}.top h1{margin:0;font-size:27px}.top p{margin:5px 0 0;color:var(--muted)}.pilot{background:#e7f6f1;color:#15725c;border:1px solid #cce9df;border-radius:999px;padding:8px 11px;font-size:12px}
-.page{display:none}.page.active{display:block}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.stat,.card{background:#fff;border:1px solid var(--line);border-radius:17px;padding:17px}.stat b{font-size:22px;display:block}.stat span{font-size:12px;color:var(--muted)}
-.table{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:17px;overflow:hidden}table{width:100%;border-collapse:collapse}th,td{padding:13px;text-align:left;border-bottom:1px solid #edf2f7;font-size:13px}th{background:#f8fafc;color:#53667d}tr:last-child td{border:0}
-.score{font-size:20px;font-weight:800}.bar{height:7px;background:#edf2f7;border-radius:20px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:linear-gradient(90deg,#0a5db8,#19a285)}
-.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}.card h2{margin:0 0 12px;font-size:18px}.field{display:grid;gap:6px;margin-bottom:11px}.field label{font-size:12px;color:#53667d}.field input,.field select,.field textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font:inherit;background:white}.field textarea{min-height:90px;resize:vertical}.btn{border:0;border-radius:10px;background:var(--b);color:white;padding:11px 14px;font-weight:800;cursor:pointer}.list{display:grid;gap:9px}.item{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}.item small{color:var(--muted)}.badge{display:inline-block;border-radius:999px;padding:4px 8px;font-size:11px;background:#eef3f8}.ok{background:#e6f6f0;color:#13755d}.new{background:#fff2e7;color:#a45217}.notice{margin-top:12px;font-size:12px;color:var(--muted)}
-@media(max-width:900px){.app{grid-template-columns:1fr}.side{position:static}.grid4{grid-template-columns:1fr 1fr}.cols{grid-template-columns:1fr}}@media(max-width:560px){main{padding:14px}.grid4{grid-template-columns:1fr}.top{flex-direction:column;gap:10px}.table{overflow:auto}}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b2f59">
+  <title>Buxoro SSB — Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<div class="app">
-<aside class="side"><div class="brand">Buxoro SSB<small>Yagona KPI boshqaruv tizimi</small></div>
-<nav>
-<button class="nav active" data-page="dashboard">▦ Dashboard / KPI</button>
-<button class="nav" data-page="qr">▣ QR baholash</button>
-<button class="nav" data-page="appeals">▤ Murojaatlar</button>
-<button class="nav" data-page="authority">★ Boshqarma bahosi</button>
-</nav></aside>
-<main>
-<div class="top"><div><h1 id="title">Yagona KPI dashboard</h1><p>KPI = QR 30 ball + Murojaat 30 ball + Boshqarma 40 ball</p></div><span class="pilot">PILOT</span></div>
-
-<section id="dashboard" class="page active">
-<div class="grid4"><div class="stat"><b>100</b><span>Maksimal KPI ball</span></div><div class="stat"><b>30</b><span>QR baholash</span></div><div class="stat"><b>30</b><span>Murojaatlar ijrosi</span></div><div class="stat"><b>40</b><span>Boshqarma bahosi</span></div></div>
-<div class="table"><table><thead><tr><th>Muassasa</th><th>QR</th><th>Murojaat</th><th>Boshqarma</th><th>Jami KPI</th></tr></thead><tbody id="dashRows"></tbody></table></div>
-</section>
-
-<section id="qr" class="page"><div class="cols">
-<div class="card"><h2>QR orqali baholash</h2><form id="qrForm"><div class="field"><label>Muassasa</label><select name="institutionId" class="inst"></select></div><div class="field"><label>Baho (1–5)</label><select name="rating"><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></div><div class="field"><label>Fikr</label><textarea name="comment" placeholder="Izoh..."></textarea></div><button class="btn">Baholashni yuborish</button></form><div class="notice">QR ball = o‘rtacha baho / 5 × 30.</div></div>
-<div class="card"><h2>So‘nggi QR baholar</h2><div id="qrList" class="list"></div></div></div></section>
-
-<section id="appeals" class="page"><div class="cols">
-<div class="card"><h2>Yangi murojaat</h2><form id="appealForm"><div class="field"><label>Muassasa</label><select name="institutionId" class="inst"></select></div><div class="field"><label>Murojaat mazmuni</label><textarea name="text" required></textarea></div><button class="btn">Murojaat yuborish</button></form><div class="notice">Murojaat ball = hal qilingan murojaatlar / jami murojaatlar × 30.</div></div>
-<div class="card"><h2>Murojaatlar</h2><div id="appealList" class="list"></div></div></div></section>
-
-<section id="authority" class="page"><div class="cols">
-<div class="card"><h2>Boshqarma bahosi</h2><form id="authForm" enctype="multipart/form-data"><div class="field"><label>Muassasa</label><select name="institutionId" class="inst"></select></div><div class="field"><label>Ball (0–40)</label><input name="score" type="number" min="0" max="40" value="30"></div><div class="field"><label>Izoh</label><textarea name="note"></textarea></div><div class="field"><label>Tasdiqlovchi fayl (10 MB gacha)</label><input name="file" type="file"></div><button class="btn">Baho qo‘yish</button></form></div>
-<div class="card"><h2>So‘nggi baholar</h2><div id="authList" class="list"></div></div></div></section>
-</main></div>
-<script>
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-let institutions=[];
-function instName(id){return institutions.find(x=>x.id===id)?.name||("ID "+id)}
-async function loadInstitutions(){institutions=await fetch("/api/institutions").then(r=>r.json());$$(".inst").forEach(s=>s.innerHTML=institutions.map(i=>'<option value="'+i.id+'">'+i.name+'</option>').join(""))}
-async function loadDash(){const d=await fetch("/api/dashboard").then(r=>r.json());$("#dashRows").innerHTML=d.institutions.map(i=>'<tr><td><b>'+i.name+'</b></td><td>'+i.qrScore+'/30<br><small>'+i.qrAvg+' ★ ('+i.qrCount+')</small></td><td>'+i.appealScore+'/30<br><small>'+i.resolved+'/'+i.appealCount+' hal qilingan</small></td><td>'+i.authorityScore+'/40</td><td><span class="score">'+i.total+'</span>/100<div class="bar"><i style="width:'+i.total+'%"></i></div></td></tr>').join("")}
-async function loadQR(){const all=[];for(const i of institutions){const a=await fetch("/api/qr/"+i.id).then(r=>r.json());a.forEach(x=>all.push(x))}all.sort((a,b)=>b.id-a.id);$("#qrList").innerHTML=all.slice(0,10).map(x=>'<div class="item"><b>'+instName(x.institutionId)+'</b><br>'+('★'.repeat(x.rating))+'<br><small>'+ (x.comment||"Izohsiz")+'</small></div>').join("")||"Ma'lumot yo'q"}
-async function loadAppeals(){const a=await fetch("/api/appeals").then(r=>r.json());$("#appealList").innerHTML=a.slice(0,20).map(x=>'<div class="item"><b>'+instName(x.institutionId)+'</b> <span class="badge '+(x.status==="resolved"?"ok":"new")+'">'+(x.status==="resolved"?"Hal qilindi":"Yangi")+'</span><p>'+x.text+'</p>'+(x.status!=="resolved"?'<button class="btn resolve" data-id="'+x.id+'">Hal qilindi</button>':"")+'</div>').join("");$$(".resolve").forEach(b=>b.onclick=async()=>{await fetch("/api/appeals/"+b.dataset.id+"/resolve",{method:"POST"});await refresh()})}
-async function loadAuth(){const a=await fetch("/api/authority").then(r=>r.json());$("#authList").innerHTML=a.slice(0,15).map(x=>'<div class="item"><b>'+instName(x.institutionId)+'</b> — <strong>'+x.score+'/40</strong><br><small>'+ (x.note||"Izohsiz")+(x.fileName?" • Fayl: "+x.fileName:"")+'</small></div>').join("")}
-async function refresh(){await Promise.all([loadDash(),loadQR(),loadAppeals(),loadAuth()])}
-$$(".nav").forEach(b=>b.onclick=()=>{$$(".nav").forEach(x=>x.classList.remove("active"));b.classList.add("active");$$(".page").forEach(x=>x.classList.remove("active"));$("#"+b.dataset.page).classList.add("active")});
-$("#qrForm").onsubmit=async e=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.target));await fetch("/api/qr",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});e.target.reset();await refresh();alert("Baholash qabul qilindi")};
-$("#appealForm").onsubmit=async e=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.target));await fetch("/api/appeals",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});e.target.reset();await refresh();alert("Murojaat qabul qilindi")};
-$("#authForm").onsubmit=async e=>{e.preventDefault();await fetch("/api/authority",{method:"POST",body:new FormData(e.target)});e.target.reset();await refresh();alert("Boshqarma bahosi saqlandi")};
-(async()=>{await loadInstitutions();await refresh()})();
-</script>
-</body></html>
+  <div id="loginScreen" class="login-screen">
+    <form id="loginForm" class="login-card" autocomplete="on">
+      <div class="login-mark">✚</div>
+      <h1>Buxoro SSB</h1>
+      <p>Yagona sog‘liqni saqlash dashboardi</p>
+      <label>Login<input name="username" autocomplete="username" required></label>
+      <label>Parol<input name="password" type="password" autocomplete="current-password" required></label>
+      <button class="btn primary" type="submit">Kirish</button>
+      <div id="loginError" class="form-error" role="alert"></div>
+    </form>
+  </div>
+  <div id="app" class="app-shell hidden">
+    <aside id="sidebar" class="sidebar">
+      <div class="brand"><span class="brand-mark">✚</span><div><strong>Buxoro SSB</strong><small>Yagona boshqaruv tizimi</small></div></div>
+      <nav id="nav" class="nav-list" aria-label="Asosiy navigatsiya">
+        <a href="/" data-route="/">⌂ <span>Bosh sahifa</span></a>
+        <a href="/kpi" data-route="/kpi">▦ <span>KPI statistikasi</span></a>
+        <a href="/ona-bola" data-route="/ona-bola">♡ <span>Ona bola statistikasi</span></a>
+        <a href="/qr" data-route="/qr">▣ <span>QR kod statistikasi</span></a>
+        <a href="/murojaatlar" data-route="/murojaatlar">▤ <span>Murojaatlar statistikasi</span></a>
+        <a href="/hisobotlar" data-route="/hisobotlar">▧ <span>Hisobotlar</span></a>
+        <a href="/sozlamalar" data-route="/sozlamalar">⚙ <span>Sozlamalar</span></a>
+      </nav>
+      <div class="sidebar-footer"><span class="dot"></span><div><strong>Production</strong><small id="sidebarStatus">Tizim holati tekshirilmoqda</small></div></div>
+    </aside>
+    <div id="shade" class="shade"></div>
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="topbar-left"><button id="menuBtn" class="menu-btn" aria-label="Menyuni ochish">☰</button><div><h1 id="pageTitle">Boshqaruv paneli</h1><p>Buxoro viloyati Sog‘liqni saqlash boshqarmasi</p></div></div>
+        <div class="topbar-controls">
+          <label class="filter"><span>Hudud</span><select id="regionFilter"><option value="">Barcha hududlar</option></select></label>
+          <div class="date-chip"><span>Bugun</span><strong id="today"></strong></div>
+          <div class="profile"><span class="avatar">A</span><div><strong id="profileName">Admin</strong><small>Tizim administratori</small></div><button id="logoutBtn" title="Chiqish">↪</button></div>
+        </div>
+      </header>
+      <main id="content" class="content" aria-live="polite"></main>
+    </div>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>
