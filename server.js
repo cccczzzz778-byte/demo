@@ -36,7 +36,7 @@ app.use(helmet({
 }));
 app.use(express.json({limit:'15mb'}));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname,'public'),{index:'index.html',maxAge:process.env.NODE_ENV==='production'?'5m':0}));
+app.use(express.static(path.join(__dirname,'public'),{index:'index.html',maxAge:0,etag:true}));
 
 const loginLimiter=rateLimit({
   windowMs:LOGIN_RATE_LIMIT.windowMs,
