@@ -1,9 +1,9 @@
 {
   "name":"dmed-medical-staff-production",
-  "version":"2.1.0",
+  "version":"2.2.0",
   "private":true,
   "main":"server.js",
-  "scripts":{"start":"node seed-test.js && node server.js","test":"node --test tests/*.test.js"},
+  "scripts":{"start":"node seed-test.js && node patch-server.js && node patch-ui.js && node server.js","test":"node --check patch-server.js && node --check patch-ui.js && node --test tests/*.test.js"},
   "engines":{"node":">=20"},
   "dependencies":{"bcryptjs":"^2.4.3","cookie-parser":"^1.4.7","express":"^4.21.2","jsonwebtoken":"^9.0.2","pg":"^8.13.1","xlsx":"^0.18.5"}
 }
