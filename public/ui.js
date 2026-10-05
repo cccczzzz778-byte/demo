@@ -19,6 +19,19 @@
     }
   }
 
+  function beginSubmit(form){
+    if(!form||form.dataset.busy==='true')return false;
+    form.dataset.busy='true';
+    form.setAttribute('aria-busy','true');
+    return true;
+  }
+
+  function endSubmit(form){
+    if(!form)return;
+    form.dataset.busy='false';
+    form.setAttribute('aria-busy','false');
+  }
+
   function clearFieldErrors(form){
     if(!form)return;
     form.querySelectorAll('.input-error').forEach(el=>{el.classList.remove('input-error');el.removeAttribute('aria-invalid');});
@@ -123,5 +136,5 @@
     if(event.target&&event.target.matches('[data-modal-close]'))cancelOpenDialog();
   });
 
-  DMED.ui={escapeHtml,setBusy,clearFieldErrors,fieldError,openModal,closeModal,cancelOpenDialog,setModalBusy,togglePassword,showToast,confirmAction};
+  DMED.ui={escapeHtml,setBusy,beginSubmit,endSubmit,clearFieldErrors,fieldError,openModal,closeModal,cancelOpenDialog,setModalBusy,togglePassword,showToast,confirmAction};
 })();
