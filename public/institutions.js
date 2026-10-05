@@ -72,8 +72,9 @@
   async function save(event,id){
     event.preventDefault();
     const form=event.currentTarget;
+    if(!DMED.ui.beginSubmit(form))return;
     const payload=institutionPayload(form);
-    if(!payload)return;
+    if(!payload){DMED.ui.endSubmit(form);return;}
     const button=document.getElementById('institutionSaveBtn');
     DMED.ui.setModalBusy(true);DMED.ui.setBusy(button,true,{busyText:'Saqlanmoqda...'});
     try{
@@ -82,7 +83,7 @@
     }catch(error){
       const text=messages[error.code]||'Ma’lumotlarni tekshiring.';
       if(error.field)DMED.ui.fieldError(form,error.field,text);else form.querySelector('.form-summary').textContent=text;
-    }finally{DMED.ui.setModalBusy(false);DMED.ui.setBusy(button,false,{idleText:'Saqlash'});}
+    }finally{DMED.ui.setModalBusy(false);DMED.ui.setBusy(button,false,{idleText:'Saqlash'});DMED.ui.endSubmit(form);}
   }
 
   function toggleAccountPassword(button){DMED.ui.togglePassword('accountPassword',button);}
@@ -105,11 +106,13 @@
 
   async function saveAccount(event,id){
     event.preventDefault();
-    const form=event.currentTarget;DMED.ui.clearFieldErrors(form);
+    const form=event.currentTarget;
+    if(!DMED.ui.beginSubmit(form))return;
+    DMED.ui.clearFieldErrors(form);
     const data=new FormData(form);const username=String(data.get('username')||'').trim();const password=String(data.get('password')||'');
-    if(!username){DMED.ui.fieldError(form,'username','Loginni kiriting.');return;}
-    if(/\s/.test(username)||username.length>80){DMED.ui.fieldError(form,'username','Login formatini tekshiring.');return;}
-    if(password.length<8){DMED.ui.fieldError(form,'password','Parol kamida 8 ta belgi bo‘lsin.');return;}
+    if(!username){DMED.ui.fieldError(form,'username','Loginni kiriting.');DMED.ui.endSubmit(form);return;}
+    if(/\s/.test(username)||username.length>80){DMED.ui.fieldError(form,'username','Login formatini tekshiring.');DMED.ui.endSubmit(form);return;}
+    if(password.length<8){DMED.ui.fieldError(form,'password','Parol kamida 8 ta belgi bo‘lsin.');DMED.ui.endSubmit(form);return;}
     const button=document.getElementById('accountSaveBtn');DMED.ui.setModalBusy(true);DMED.ui.setBusy(button,true,{busyText:'Saqlanmoqda...'});
     try{
       await DMED.api(`/api/institutions/${id}/account`,{method:'POST',body:{username,password}});
@@ -117,7 +120,7 @@
     }catch(error){
       const text=messages[error.code]||'Login yoki parolni tekshiring.';
       if(error.field)DMED.ui.fieldError(form,error.field,text);else form.querySelector('.form-summary').textContent=text;
-    }finally{DMED.ui.setModalBusy(false);DMED.ui.setBusy(button,false,{idleText:'Saqlash'});}
+    }finally{DMED.ui.setModalBusy(false);DMED.ui.setBusy(button,false,{idleText:'Saqlash'});DMED.ui.endSubmit(form);}
   }
 
   async function remove(item,opener){
