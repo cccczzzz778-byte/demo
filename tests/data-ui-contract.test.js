@@ -32,6 +32,12 @@ test('Excel import UI exposes preview counts and row errors',()=>{
   assert.match(imp,/\/api\/import\/staff/);
 });
 
+test('Excel preview form uses duplicate-submit lock',()=>{
+  const imp=read('import.js');
+  assert.match(imp,/DMED\.ui\.beginSubmit\(event\.currentTarget\)/);
+  assert.match(imp,/DMED\.ui\.endSubmit\(event\.currentTarget\)/);
+});
+
 test('staff table has an empty state hook',()=>{
   const html=read('index.html');
   assert.match(html,/id=["']staffEmpty["']/);
