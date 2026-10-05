@@ -23,7 +23,7 @@ Mavjud `demo`, KPI, QR, Murojaatlar va Ona-bola productionlari o‘zgartirilmayd
 - KPI tizimi — jami ko‘rsatkichlar, o‘rtacha ball, bajarilgan/bajarilmagan mezonlar.
 - Ona-bola tizimi — jami ayollar, homilador ayollar, 0–3 yosh bolalar, tug‘ruqlar va hudud statistikasi.
 - QR-kod tizimi — jami QR, faol/nofaol QR, baholashlar va faollik foizi.
-- Murojaatlar tizimi — jami murojaatlar, ko‘rib chiqilgan, jarayondagi, rad etilgan/yopilgan murojaatlar.
+- Murojaatlar tizimi — jami murojaatlar, ko‘rib chiqilgan, jarayondagi va yopilgan murojaatlar.
 - Umumiy oylik dinamika.
 - Tizimlar ulushi yoki umumiy ko‘rsatkich diagrammasi.
 - Hudud va muassasa filtrlari.
@@ -53,7 +53,7 @@ Mavjud `demo`, KPI, QR, Murojaatlar va Ona-bola productionlari o‘zgartirilmayd
 
 ### 3.5. Murojaatlar statistikasi
 - Jami murojaatlar.
-- Yangi, jarayonda, hal qilingan/yopilgan holatlar.
+- Yangi, jarayonda va hal qilingan/yopilgan holatlar.
 - Muassasa va shifokor kesimi.
 - O‘rtacha ko‘rib chiqish vaqti.
 - Eng ko‘p murojaat tushgan yo‘nalishlar.
@@ -87,14 +87,15 @@ UI bir xil design system bilan quriladi. Har bir modul mustaqil ko‘rinsa ham, 
 ## 5. Texnik arxitektura
 
 ### Frontend
-- React + Vite yoki Next.js asosida SPA/dashboard.
-- Chart.js yoki Recharts grafiklar uchun.
-- Responsive komponentlar.
-- Har modul uchun alohida route.
+- React 19 + Vite + TypeScript.
+- React Router orqali modul route’lari.
+- Recharts grafiklar uchun.
+- Responsive komponentlar va yagona design system.
 
 ### Backend
-- Node.js/Express yoki Next.js API layer.
+- Node.js + Express + TypeScript.
 - PostgreSQL asosiy persistent DB.
+- Prisma ORM.
 - Tashqi mavjud tizimlar uchun adapter qatlam:
   - KPI adapter
   - Ona-bola adapter
@@ -102,6 +103,11 @@ UI bir xil design system bilan quriladi. Har bir modul mustaqil ko‘rinsa ham, 
   - Murojaatlar adapter
 
 Adapterlar yordamida mavjud tizimlar keyinchalik o‘zgarsa, markaziy dashboardni qayta yozmasdan integratsiyani almashtirish mumkin.
+
+### Deployment
+- Frontend va backend bitta Railway production service ichida build qilinadi.
+- PostgreSQL Railway’da alohida managed service bo‘ladi.
+- Production URL Railway domain orqali beriladi; keyinchalik custom domain ulash mumkin.
 
 ### Database
 Yangi portal o‘zining metadata va cached statistikalarini PostgreSQL’da saqlaydi. Mavjud tizimlarning original production ma’lumotlari ruxsatsiz ko‘chirilmaydi.
@@ -121,16 +127,16 @@ Minimal jadvallar:
 1. Frontend dashboard backend `/api/dashboard` endpointiga so‘rov yuboradi.
 2. Backend kerakli adapterlar orqali KPI, Ona-bola, QR va Murojaat ma’lumotlarini oladi.
 3. Backend normalizatsiya qiladi va yagona format qaytaradi.
-4. Agar tashqi tizim vaqtincha ishlamasa, oxirgi muvaffaqiyatli cached ko‘rsatkich ko‘rsatiladi va "ma’lumot yangilanmadi" holati aniq belgilanadi.
+4. Agar tashqi tizim vaqtincha ishlamasa, oxirgi muvaffaqiyatli cached ko‘rsatkich ko‘rsatiladi va `ma’lumot yangilanmadi` holati aniq belgilanadi.
 5. Hisobot endpointi xuddi shu normalizatsiyalangan ma’lumotlardan Excel yaratadi.
 
 ## 7. Xavfsizlik
 
 - Admin autentifikatsiyasi.
 - Role-based access control.
-- Password hash.
-- Production secretlar faqat Railway environment variables’da.
-- Rate limiting va basic security headers.
+- Parollar `argon2` bilan hash qilinadi.
+- Production secretlar faqat Railway environment variables’da saqlanadi.
+- `helmet` security headers va API rate limiting.
 - Audit log: admin tomonidan qilingan muhim o‘zgarishlar yozib boriladi.
 - Tibbiy/shaxsiy ma’lumotlar dashboardning umumiy statistik sahifalarida chiqarilmaydi; faqat agregat statistika.
 
@@ -139,15 +145,17 @@ Minimal jadvallar:
 - Har bir tashqi modul mustaqil ishlaydi; bitta integratsiya ishlamasa, qolgan dashboard ochilishi kerak.
 - Tashqi API xatosi foydalanuvchiga texnik stacktrace ko‘rinishida chiqarilmaydi.
 - Integratsiya statusi admin panelda ko‘rsatiladi.
-- DB yozish xatolari transaction/validation bilan boshqariladi.
+- DB yozish xatolari transaction va server-side validation bilan boshqariladi.
 
 ## 9. Test talablari
 
+- Vitest orqali frontend/unit testlar.
+- Supertest orqali backend API testlar.
 - API health test.
 - Authentication va role tests.
 - Har adapter uchun success/error test.
 - Dashboard aggregation test.
-- Hisobot generatsiyasi test.
+- Excel hisobot generatsiyasi test.
 - Responsive smoke test.
 - Production health endpoint.
 
@@ -155,10 +163,10 @@ Minimal jadvallar:
 
 ### 1-bosqich — yangi production skeleti
 - yangi GitHub repo;
-- frontend shell;
+- React/Vite frontend shell;
 - sidebar va dashboard dizayni;
-- backend/API skeleton;
-- PostgreSQL;
+- Express API skeleton;
+- PostgreSQL + Prisma;
 - Railway production deploy.
 
 ### 2-bosqich — KPI integratsiyasi
@@ -181,7 +189,7 @@ Minimal jadvallar:
 
 ## 11. Muhim cheklov
 
-Ona-bola saytining ochiq frontend URL’idan real ma’lumotni ishonchli olish mumkinligi hali tasdiqlanmagan. Real integratsiya uchun uning API endpointi, backend, database yoki source-code accessi kerak bo‘lishi mumkin. API mavjudligi aniqlanmaguncha frontenddagi raqamlarni “real data” deb ko‘rsatish mumkin emas.
+Ona-bola saytining ochiq frontend URL’idan real ma’lumotni ishonchli olish mumkinligi hali tasdiqlanmagan. Real integratsiya uchun uning API endpointi, backend, database yoki source-code accessi kerak bo‘lishi mumkin. API mavjudligi aniqlanmaguncha frontenddagi raqamlarni `real data` deb ko‘rsatish mumkin emas.
 
 ## 12. Yakuniy qabul mezonlari
 
