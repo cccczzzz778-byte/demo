@@ -1,60 +1,87 @@
-const express=require("express");
-const multer=require("multer");
-const fs=require("fs");
-const path=require("path");
-const app=express();
-const PORT=process.env.PORT||3000;
-const upload=multer({dest:"uploads/",limits:{fileSize:10*1024*1024}});
-const DB=path.join(__dirname,"data.json");
+const express=require('express');
+const multer=require('multer');
+const path=require('path');
+const crypto=require('crypto');
+const ExcelJS=require('exceljs');
+const {Pool}=require('pg');
+const {safeText,summarizeKpi,extractOnaStats,signSession,verifySession}=require('./core');
 
-function seed(){
-  return {
-    institutions:[
-      {id:1,name:"Buxoro shahar tibbiyot birlashmasi"},
-      {id:2,name:"G‘ijduvon tuman tibbiyot birlashmasi"},
-      {id:3,name:"Vobkent tuman tibbiyot birlashmasi"}
-    ],
-    qr:[
-      {id:1,institutionId:1,rating:5,comment:"Xizmat yaxshi",createdAt:new Date().toISOString()},
-      {id:2,institutionId:1,rating:4,comment:"Navbat biroz ko‘p",createdAt:new Date().toISOString()},
-      {id:3,institutionId:2,rating:4,comment:"Yaxshi",createdAt:new Date().toISOString()}
-    ],
-    appeals:[
-      {id:1,institutionId:1,text:"Qabul vaqtini aniqlashtirish",status:"resolved",createdAt:new Date().toISOString(),resolvedAt:new Date().toISOString()},
-      {id:2,institutionId:1,text:"Navbat masalasi",status:"new",createdAt:new Date().toISOString(),resolvedAt:null},
-      {id:3,institutionId:2,text:"Dori mavjudligi haqida",status:"resolved",createdAt:new Date().toISOString(),resolvedAt:new Date().toISOString()}
-    ],
-    authority:[
-      {id:1,institutionId:1,score:32,note:"Taqdim etilgan ma’lumotlar asosida",fileName:null,createdAt:new Date().toISOString()},
-      {id:2,institutionId:2,score:35,note:"Ijro yaxshi",fileName:null,createdAt:new Date().toISOString()}
-    ]
-  }
+const app=express();
+const PORT=Number(process.env.PORT||3000);
+const DATABASE_URL=process.env.DATABASE_URL;
+const ADMIN_USERNAME=process.env.ADMIN_USERNAME||'admin';
+const ADMIN_PASSWORD=process.env.ADMIN_PASSWORD||'';
+const AUTH_SECRET=process.env.AUTH_SECRET||'';
+const DEFAULT_KPI_URL='https://buxoro-kpi-production.up.railway.app/api/dashboard?period=monthly';
+const DEFAULT_ONA_URL='https://ona-bola-registry.vercel.app/';
+const pool=new Pool({connectionString:DATABASE_URL,max:8,idleTimeoutMillis:30000});
+const upload=multer({storage:multer.memoryStorage(),limits:{fileSize:10*1024*1024}});
+let kpiCache={at:0,value:null,error:null};
+let onaCache={at:0,value:null};
+
+function parseCookies(req){const out={};for(const part of String(req.headers.cookie||'').split(';')){const i=part.indexOf('=');if(i>0)out[part.slice(0,i).trim()]=decodeURIComponent(part.slice(i+1).trim())}return out}
+function setSessionCookie(res,token){res.cookie('ssb_session',token,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/',maxAge:8*60*60*1000})}
+function clearSessionCookie(res){res.clearCookie('ssb_session',{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/'})}
+function constantEqual(a,b){const x=Buffer.from(String(a)),y=Buffer.from(String(b));return x.length===y.length&&crypto.timingSafeEqual(x,y)}
+function actor(req){return req.session?.username||'system'}
+async function audit(req,action,entity,entityId=null){try{await pool.query('insert into audit_log(actor,action,entity,entity_id) values($1,$2,$3,$4)',[actor(req),action,entity,entityId==null?null:String(entityId)])}catch(e){console.error('audit',e.message)}}
+function auth(req,res,next){const token=parseCookies(req).ssb_session;const session=verifySession(token,AUTH_SECRET);if(!session)return res.status(401).json({error:'Avtorizatsiya talab qilinadi'});req.session=session;next()}
+async function fetchJson(url,options={},timeoutMs=12000){const ctl=new AbortController();const timer=setTimeout(()=>ctl.abort(),timeoutMs);try{const r=await fetch(url,{...options,signal:ctl.signal,headers:{accept:'application/json',...(options.headers||{})}});const text=await r.text();let data=null;try{data=JSON.parse(text)}catch{}if(!r.ok){const e=new Error(`HTTP ${r.status}`);e.status=r.status;e.body=text.slice(0,500);throw e}return data}finally{clearTimeout(timer)}}
+async function getSetting(key,fallback=''){const r=await pool.query('select value from app_settings where key=$1',[key]);return r.rows[0]?.value??fallback}
+async function putSetting(key,value){await pool.query(`insert into app_settings(key,value,updated_at) values($1,$2,now()) on conflict(key) do update set value=excluded.value,updated_at=now()`,[key,String(value)])}
+
+async function initDb(){
+ if(!DATABASE_URL)throw new Error('DATABASE_URL sozlanmagan');
+ await pool.query(`
+ create table if not exists app_settings(key text primary key,value text not null default '',updated_at timestamptz not null default now());
+ create table if not exists institutions(id text primary key,name text not null,district text not null default '',type text not null default '',active boolean not null default true,qr_enabled boolean not null default true,source text not null default 'kpi',updated_at timestamptz not null default now());
+ create table if not exists qr_ratings(id bigserial primary key,institution_id text not null references institutions(id) on delete cascade,rating int not null check(rating between 1 and 5),comment text not null default '',created_at timestamptz not null default now());
+ create table if not exists appeals(id bigserial primary key,institution_id text not null references institutions(id) on delete cascade,text text not null,status text not null default 'new',created_at timestamptz not null default now(),resolved_at timestamptz);
+ create table if not exists authority_scores(id bigserial primary key,institution_id text not null references institutions(id) on delete cascade,score numeric(5,1) not null check(score between 0 and 40),note text not null default '',file_name text,file_type text,file_data bytea,created_at timestamptz not null default now());
+ create table if not exists audit_log(id bigserial primary key,actor text not null,action text not null,entity text not null,entity_id text,created_at timestamptz not null default now());
+ create index if not exists idx_qr_inst_date on qr_ratings(institution_id,created_at desc);
+ create index if not exists idx_appeals_inst_date on appeals(institution_id,created_at desc);
+ create index if not exists idx_authority_inst_date on authority_scores(institution_id,created_at desc);
+ `);
+ await putSetting('system_name',await getSetting('system_name','Buxoro viloyati Sog‘liqni saqlash dashboard'));
+ await putSetting('kpi_source_url',await getSetting('kpi_source_url',process.env.KPI_SOURCE_URL||DEFAULT_KPI_URL));
+ await putSetting('ona_source_url',await getSetting('ona_source_url',process.env.ONA_BOLA_SOURCE_URL||DEFAULT_ONA_URL));
 }
-function read(){if(!fs.existsSync(DB)) fs.writeFileSync(DB,JSON.stringify(seed(),null,2));return JSON.parse(fs.readFileSync(DB,"utf8"))}
-function write(d){fs.writeFileSync(DB,JSON.stringify(d,null,2))}
-function calc(d,i){
-  const q=d.qr.filter(x=>x.institutionId===i);
-  const avg=q.length?q.reduce((s,x)=>s+x.rating,0)/q.length:0;
-  const qrScore=+(avg/5*30).toFixed(1);
-  const a=d.appeals.filter(x=>x.institutionId===i);
-  const resolved=a.filter(x=>x.status==="resolved").length;
-  const appealScore=+(a.length?resolved/a.length*30:0).toFixed(1);
-  const last=d.authority.filter(x=>x.institutionId===i).sort((x,y)=>y.id-x.id)[0];
-  const authorityScore=last?Math.max(0,Math.min(40,+last.score||0)):0;
-  return {qrCount:q.length,qrAvg:+avg.toFixed(2),qrScore,appealCount:a.length,resolved,appealScore,authorityScore,total:+(qrScore+appealScore+authorityScore).toFixed(1)}
-}
-app.use(express.json());
-app.use(express.urlencoded({extended:true}));
-app.use(express.static(path.join(__dirname,"public")));
-app.get("/api/health",(_,res)=>res.json({ok:true}));
-app.get("/api/dashboard",(_,res)=>{const d=read();res.json({institutions:d.institutions.map(i=>({...i,...calc(d,i.id)}))})});
-app.get("/api/institutions",(_,res)=>res.json(read().institutions));
-app.get("/api/qr/:institutionId", (req,res)=>{const d=read();res.json(d.qr.filter(x=>x.institutionId===+req.params.institutionId).sort((a,b)=>b.id-a.id))});
-app.post("/api/qr",(req,res)=>{const d=read();const rating=Math.max(1,Math.min(5,+req.body.rating||0));if(!req.body.institutionId||!rating)return res.status(400).json({error:"Ma'lumot yetarli emas"});d.qr.push({id:Date.now(),institutionId:+req.body.institutionId,rating,comment:String(req.body.comment||"").slice(0,500),createdAt:new Date().toISOString()});write(d);res.json({ok:true})});
-app.get("/api/appeals",(req,res)=>{const d=read();let a=d.appeals;if(req.query.institutionId)a=a.filter(x=>x.institutionId===+req.query.institutionId);res.json(a.sort((x,y)=>y.id-x.id))});
-app.post("/api/appeals",(req,res)=>{const d=read();if(!req.body.institutionId||!req.body.text)return res.status(400).json({error:"Ma'lumot yetarli emas"});d.appeals.push({id:Date.now(),institutionId:+req.body.institutionId,text:String(req.body.text).slice(0,1000),status:"new",createdAt:new Date().toISOString(),resolvedAt:null});write(d);res.json({ok:true})});
-app.post("/api/appeals/:id/resolve",(req,res)=>{const d=read();const a=d.appeals.find(x=>x.id===+req.params.id);if(!a)return res.status(404).json({error:"Topilmadi"});a.status="resolved";a.resolvedAt=new Date().toISOString();write(d);res.json({ok:true})});
-app.get("/api/authority",(req,res)=>{const d=read();res.json(d.authority.sort((a,b)=>b.id-a.id))});
-app.post("/api/authority",upload.single("file"),(req,res)=>{const d=read();const score=Math.max(0,Math.min(40,+req.body.score||0));if(!req.body.institutionId)return res.status(400).json({error:"Muassasa tanlanmagan"});d.authority.push({id:Date.now(),institutionId:+req.body.institutionId,score,note:String(req.body.note||"").slice(0,1000),fileName:req.file?req.file.originalname:null,storedName:req.file?req.file.filename:null,createdAt:new Date().toISOString()});write(d);res.json({ok:true})});
-app.get("*",(_,res)=>res.sendFile(path.join(__dirname,"public","index.html")));
-app.listen(PORT,"0.0.0.0",()=>console.log("Unified pilot running",PORT));
+async function fetchKpi(force=false){if(!force&&kpiCache.value&&Date.now()-kpiCache.at<30000)return kpiCache.value;const url=await getSetting('kpi_source_url',DEFAULT_KPI_URL);try{const raw=await fetchJson(url,{},15000);const summary=summarizeKpi(raw);const value={ok:true,url,summary,rawMeta:{period:raw?.period??null,currentDate:raw?.currentDate??null,selectedMonth:raw?.selectedMonth??null,currentMonth:raw?.currentMonth??null}};kpiCache={at:Date.now(),value,error:null};return value}catch(e){kpiCache={at:Date.now(),value:null,error:e.message};throw e}}
+async function syncKpiInstitutions(){const k=await fetchKpi(true);const client=await pool.connect();try{await client.query('begin');for(const i of k.summary.rows){await client.query(`insert into institutions(id,name,district,type,active,source,updated_at) values($1,$2,$3,$4,true,'kpi',now()) on conflict(id) do update set name=excluded.name,district=excluded.district,type=excluded.type,active=true,source='kpi',updated_at=now()`,[i.id,i.name,i.district,i.type])}await client.query('commit')}catch(e){await client.query('rollback');throw e}finally{client.release()}return {count:k.summary.institutionsTotal}}
+async function sourceReachable(url){const ctl=new AbortController();const timer=setTimeout(()=>ctl.abort(),7000);try{const r=await fetch(url,{method:'GET',signal:ctl.signal,headers:{'user-agent':'Buxoro-SSB-Dashboard/2.0'}});return {online:r.status>=200&&r.status<500,status:r.status}}catch(e){return {online:false,status:null,error:e.name==='AbortError'?'timeout':e.message}}finally{clearTimeout(timer)}}
+async function fetchOna(force=false){if(!force&&onaCache.value&&Date.now()-onaCache.at<60000)return onaCache.value;const sourceUrl=await getSetting('ona_source_url',DEFAULT_ONA_URL);const source=await sourceReachable(sourceUrl);const statsUrl=process.env.ONA_BOLA_STATS_URL||'';let stats=null,statsConnected=false,statsError=null;if(statsUrl){try{const headers={};if(process.env.ONA_BOLA_STATS_TOKEN)headers.authorization=`Bearer ${process.env.ONA_BOLA_STATS_TOKEN}`;const payload=await fetchJson(statsUrl,{headers},15000);stats=extractOnaStats(payload);statsConnected=true}catch(e){statsError=e.message}}const value={sourceUrl,source,statsConnected,statsError,stats};onaCache={at:Date.now(),value};return value}
+async function localStats(){const [inst,qr,appeals,authority]=await Promise.all([pool.query('select count(*)::int total,count(*) filter(where active and qr_enabled)::int qr_active from institutions'),pool.query('select count(*)::int total,coalesce(round(avg(rating)::numeric,2),0)::float avg from qr_ratings'),pool.query(`select count(*)::int total,count(*) filter(where status='resolved')::int resolved,count(*) filter(where status<>'resolved')::int open from appeals`),pool.query('select count(*)::int total from authority_scores')]);return {institutions:inst.rows[0],qr:qr.rows[0],appeals:appeals.rows[0],authority:authority.rows[0]}}
+
+app.disable('x-powered-by');
+app.use((req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','same-origin');res.setHeader('Content-Security-Policy',"default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; base-uri 'self'; frame-ancestors 'none'");next()});
+app.use(express.json({limit:'1mb'}));app.use(express.urlencoded({extended:false,limit:'1mb'}));app.use(express.static(path.join(__dirname,'public'),{maxAge:process.env.NODE_ENV==='production'?'5m':0}));
+app.get('/api/health',async(req,res)=>{try{await pool.query('select 1');res.json({ok:true,db:true,service:'buxoro-ssb-dashboard'})}catch(e){res.status(503).json({ok:false,db:false})}});
+app.get('/api/ready',async(req,res)=>{try{await pool.query('select 1');res.json({ok:true})}catch{res.status(503).json({ok:false})}});
+app.post('/api/login',(req,res)=>{if(!ADMIN_PASSWORD||!AUTH_SECRET)return res.status(503).json({error:'Admin autentifikatsiyasi sozlanmagan'});const u=safeText(req.body.username,100),p=String(req.body.password||'');if(!constantEqual(u,ADMIN_USERNAME)||!constantEqual(p,ADMIN_PASSWORD))return res.status(401).json({error:'Login yoki parol noto‘g‘ri'});setSessionCookie(res,signSession(u,AUTH_SECRET));res.json({ok:true,user:{username:u}})});
+app.get('/api/session',(req,res)=>{const s=verifySession(parseCookies(req).ssb_session,AUTH_SECRET);res.json(s?{authenticated:true,user:{username:s.username}}:{authenticated:false})});
+app.post('/api/logout',(req,res)=>{clearSessionCookie(res);res.json({ok:true})});
+app.use('/api',(req,res,next)=>{if(['/health','/ready','/login','/session'].includes(req.path))return next();return auth(req,res,next)});
+
+app.get('/api/summary',async(req,res)=>{const [local,ona,kpiResult]=await Promise.all([localStats(),fetchOna(),fetchKpi().catch(e=>({ok:false,error:e.message}))]);res.json({local,ona,kpi:kpiResult})});
+app.get('/api/kpi/live',async(req,res)=>{try{res.json(await fetchKpi(req.query.refresh==='1'))}catch(e){res.status(502).json({ok:false,error:'KPI manbasidan ma’lumot olinmadi'})}});
+app.get('/api/ona-bola/status',async(req,res)=>res.json(await fetchOna(req.query.refresh==='1')));
+app.get('/api/institutions',async(req,res)=>{const {rows}=await pool.query('select id,name,district,type,active,qr_enabled from institutions where active order by district,name');res.json(rows)});
+app.post('/api/admin/sync-kpi-institutions',async(req,res)=>{try{const out=await syncKpiInstitutions();await audit(req,'sync','kpi_institutions',out.count);res.json({ok:true,...out})}catch(e){res.status(502).json({error:'KPI muassasalari sinxronlanmadi'})}});
+app.get('/api/qr/stats',async(req,res)=>{const {rows}=await pool.query(`select (select count(*)::int from institutions where active and qr_enabled) active_qr,count(q.id)::int ratings,coalesce(round(avg(q.rating)::numeric,2),0)::float average from qr_ratings q`);res.json(rows[0])});
+app.get('/api/qr',async(req,res)=>{const {rows}=await pool.query(`select q.id,q.rating,q.comment,q.created_at,i.name institution_name,i.district from qr_ratings q join institutions i on i.id=q.institution_id order by q.created_at desc limit 200`);res.json(rows)});
+app.post('/api/qr',async(req,res)=>{const institutionId=safeText(req.body.institutionId,100),rating=Number(req.body.rating),comment=safeText(req.body.comment,500);if(!institutionId||!Number.isInteger(rating)||rating<1||rating>5)return res.status(400).json({error:'Ma’lumot noto‘g‘ri'});const exists=await pool.query('select 1 from institutions where id=$1 and active',[institutionId]);if(!exists.rowCount)return res.status(404).json({error:'Muassasa topilmadi'});const {rows}=await pool.query('insert into qr_ratings(institution_id,rating,comment) values($1,$2,$3) returning id',[institutionId,rating,comment]);await audit(req,'create','qr_rating',rows[0].id);res.json({ok:true,id:rows[0].id})});
+app.get('/api/appeals/stats',async(req,res)=>{const {rows}=await pool.query(`select count(*)::int total,count(*) filter(where status='resolved')::int resolved,count(*) filter(where status<>'resolved')::int open from appeals`);res.json(rows[0])});
+app.get('/api/appeals',async(req,res)=>{const {rows}=await pool.query(`select a.id,a.text,a.status,a.created_at,a.resolved_at,i.name institution_name,i.district from appeals a join institutions i on i.id=a.institution_id order by a.created_at desc limit 300`);res.json(rows)});
+app.post('/api/appeals',async(req,res)=>{const institutionId=safeText(req.body.institutionId,100),text=safeText(req.body.text,1500);if(!institutionId||!text)return res.status(400).json({error:'Ma’lumot yetarli emas'});const exists=await pool.query('select 1 from institutions where id=$1 and active',[institutionId]);if(!exists.rowCount)return res.status(404).json({error:'Muassasa topilmadi'});const {rows}=await pool.query(`insert into appeals(institution_id,text,status) values($1,$2,'new') returning id`,[institutionId,text]);await audit(req,'create','appeal',rows[0].id);res.json({ok:true,id:rows[0].id})});
+app.post('/api/appeals/:id/resolve',async(req,res)=>{const {rows}=await pool.query(`update appeals set status='resolved',resolved_at=now() where id=$1 returning id`,[Number(req.params.id)]);if(!rows.length)return res.status(404).json({error:'Murojaat topilmadi'});await audit(req,'resolve','appeal',rows[0].id);res.json({ok:true})});
+app.get('/api/authority',async(req,res)=>{const {rows}=await pool.query(`select a.id,a.score::float,a.note,a.file_name,a.created_at,i.name institution_name from authority_scores a join institutions i on i.id=a.institution_id order by a.created_at desc limit 200`);res.json(rows)});
+app.post('/api/authority',upload.single('file'),async(req,res)=>{const institutionId=safeText(req.body.institutionId,100),score=Number(req.body.score),note=safeText(req.body.note,1000);if(!institutionId||!Number.isFinite(score)||score<0||score>40)return res.status(400).json({error:'Baho noto‘g‘ri'});const exists=await pool.query('select 1 from institutions where id=$1 and active',[institutionId]);if(!exists.rowCount)return res.status(404).json({error:'Muassasa topilmadi'});const f=req.file;const {rows}=await pool.query(`insert into authority_scores(institution_id,score,note,file_name,file_type,file_data) values($1,$2,$3,$4,$5,$6) returning id`,[institutionId,score,note,f?.originalname||null,f?.mimetype||null,f?.buffer||null]);await audit(req,'create','authority_score',rows[0].id);res.json({ok:true,id:rows[0].id})});
+app.get('/api/authority/:id/file',async(req,res)=>{const {rows}=await pool.query('select file_name,file_type,file_data from authority_scores where id=$1',[Number(req.params.id)]);const f=rows[0];if(!f?.file_data)return res.status(404).json({error:'Fayl topilmadi'});res.setHeader('Content-Type',f.file_type||'application/octet-stream');res.setHeader('Content-Disposition',`attachment; filename*=UTF-8''${encodeURIComponent(f.file_name||'file')}`);res.send(f.file_data)});
+app.get('/api/settings',async(req,res)=>{const systemName=await getSetting('system_name','Buxoro viloyati Sog‘liqni saqlash dashboard');const kpiSourceUrl=await getSetting('kpi_source_url',DEFAULT_KPI_URL);const onaSourceUrl=await getSetting('ona_source_url',DEFAULT_ONA_URL);res.json({systemName,kpiSourceUrl,onaSourceUrl,onaStatsConfigured:Boolean(process.env.ONA_BOLA_STATS_URL)})});
+app.put('/api/settings',async(req,res)=>{const systemName=safeText(req.body.systemName,200),kpi=safeText(req.body.kpiSourceUrl,500),ona=safeText(req.body.onaSourceUrl,500);if(systemName)await putSetting('system_name',systemName);if(/^https:\/\//.test(kpi))await putSetting('kpi_source_url',kpi);if(/^https:\/\//.test(ona))await putSetting('ona_source_url',ona);kpiCache={at:0,value:null,error:null};onaCache={at:0,value:null};await audit(req,'update','settings');res.json({ok:true})});
+app.get('/api/audit',async(req,res)=>{const {rows}=await pool.query('select id,actor,action,entity,entity_id,created_at from audit_log order by created_at desc limit 200');res.json(rows)});
+app.get('/api/reports.xlsx',async(req,res)=>{const wb=new ExcelJS.Workbook();wb.creator='Buxoro SSB Dashboard';wb.created=new Date();const kpi=await fetchKpi().catch(()=>null);const qr=await pool.query(`select q.id,i.name muassasa,i.district hudud,q.rating baho,q.comment izoh,q.created_at sana from qr_ratings q join institutions i on i.id=q.institution_id order by q.created_at desc`);const appeals=await pool.query(`select a.id,i.name muassasa,i.district hudud,a.text mazmun,a.status holat,a.created_at kelgan,a.resolved_at hal_qilingan from appeals a join institutions i on i.id=a.institution_id order by a.created_at desc`);function sheet(name,rows){const ws=wb.addWorksheet(name);if(!rows.length){ws.addRow(['Ma’lumot yo‘q']);return}ws.columns=Object.keys(rows[0]).map(k=>({header:k,key:k,width:Math.min(45,Math.max(14,k.length+4))}));rows.forEach(r=>ws.addRow(r));ws.getRow(1).font={bold:true};ws.views=[{state:'frozen',ySplit:1}]}if(kpi?.summary)sheet('KPI',kpi.summary.rows.map(x=>({muassasa:x.name,hudud:x.district,tur:x.type,yigilgan_ball:x.score,baholashlar:x.evaluations})));sheet('QR',qr.rows);sheet('Murojaatlar',appeals.rows);res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');res.setHeader('Content-Disposition',`attachment; filename="Buxoro_SSB_Hisobot_${new Date().toISOString().slice(0,10)}.xlsx"`);await wb.xlsx.write(res);res.end()});
+app.get('*',(req,res)=>res.sendFile(path.join(__dirname,'public','index.html')));
+
+(async()=>{try{await initDb();try{const out=await syncKpiInstitutions();console.log('KPI institutions synced',out.count)}catch(e){console.error('KPI sync warning:',e.message)}app.listen(PORT,'0.0.0.0',()=>console.log(`Buxoro SSB dashboard ${PORT}-portda ishga tushdi`))}catch(e){console.error('Startup failed:',e);process.exit(1)}})();
