@@ -21,7 +21,7 @@
 
   function clearFieldErrors(form){
     if(!form)return;
-    form.querySelectorAll('.input-error').forEach(el=>el.classList.remove('input-error'));
+    form.querySelectorAll('.input-error').forEach(el=>{el.classList.remove('input-error');el.removeAttribute('aria-invalid');});
     form.querySelectorAll('[data-error-for]').forEach(el=>{el.textContent='';});
     const summary=form.querySelector('.form-summary');
     if(summary)summary.textContent='';
@@ -68,6 +68,14 @@
     lastOpener=null;
   }
 
+  function cancelOpenDialog(){
+    const modal=document.getElementById('modal');
+    if(!modal||modal.classList.contains('hidden')||modal.dataset.busy==='true')return;
+    const cancel=document.getElementById('modalBox')?.querySelector('[data-confirm-cancel]');
+    if(cancel){cancel.click();return;}
+    closeModal();
+  }
+
   function setModalBusy(busy){
     const modal=document.getElementById('modal');
     if(modal)modal.dataset.busy=busy?'true':'false';
@@ -109,11 +117,11 @@
   }
 
   document.addEventListener('keydown',event=>{
-    if(event.key==='Escape')closeModal();
+    if(event.key==='Escape'){event.preventDefault();cancelOpenDialog();}
   });
   document.addEventListener('click',event=>{
-    if(event.target&&event.target.matches('[data-modal-close]'))closeModal();
+    if(event.target&&event.target.matches('[data-modal-close]'))cancelOpenDialog();
   });
 
-  DMED.ui={escapeHtml,setBusy,clearFieldErrors,fieldError,openModal,closeModal,setModalBusy,togglePassword,showToast,confirmAction};
+  DMED.ui={escapeHtml,setBusy,clearFieldErrors,fieldError,openModal,closeModal,cancelOpenDialog,setModalBusy,togglePassword,showToast,confirmAction};
 })();
