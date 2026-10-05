@@ -36,3 +36,7 @@ test('server serves static frontend directly without source rewriting',()=>{
   assert.doesNotMatch(server,/importUiScript|patch-ui\.js|patch-server\.js/);
   assert.match(server,/express\.static\(path\.join\(__dirname,'public'\)/);
 });
+
+test('static frontend revalidates after deploy instead of keeping stale assets',()=>{
+  assert.match(server,/express\.static\(path\.join\(__dirname,'public'\),\{index:'index\.html',maxAge:0/);
+});
