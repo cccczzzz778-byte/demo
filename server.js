@@ -1,60 +1,19 @@
-const express=require("express");
-const multer=require("multer");
-const fs=require("fs");
-const path=require("path");
-const app=express();
-const PORT=process.env.PORT||3000;
-const upload=multer({dest:"uploads/",limits:{fileSize:10*1024*1024}});
-const DB=path.join(__dirname,"data.json");
-
-function seed(){
-  return {
-    institutions:[
-      {id:1,name:"Buxoro shahar tibbiyot birlashmasi"},
-      {id:2,name:"G‘ijduvon tuman tibbiyot birlashmasi"},
-      {id:3,name:"Vobkent tuman tibbiyot birlashmasi"}
-    ],
-    qr:[
-      {id:1,institutionId:1,rating:5,comment:"Xizmat yaxshi",createdAt:new Date().toISOString()},
-      {id:2,institutionId:1,rating:4,comment:"Navbat biroz ko‘p",createdAt:new Date().toISOString()},
-      {id:3,institutionId:2,rating:4,comment:"Yaxshi",createdAt:new Date().toISOString()}
-    ],
-    appeals:[
-      {id:1,institutionId:1,text:"Qabul vaqtini aniqlashtirish",status:"resolved",createdAt:new Date().toISOString(),resolvedAt:new Date().toISOString()},
-      {id:2,institutionId:1,text:"Navbat masalasi",status:"new",createdAt:new Date().toISOString(),resolvedAt:null},
-      {id:3,institutionId:2,text:"Dori mavjudligi haqida",status:"resolved",createdAt:new Date().toISOString(),resolvedAt:new Date().toISOString()}
-    ],
-    authority:[
-      {id:1,institutionId:1,score:32,note:"Taqdim etilgan ma’lumotlar asosida",fileName:null,createdAt:new Date().toISOString()},
-      {id:2,institutionId:2,score:35,note:"Ijro yaxshi",fileName:null,createdAt:new Date().toISOString()}
-    ]
-  }
-}
-function read(){if(!fs.existsSync(DB)) fs.writeFileSync(DB,JSON.stringify(seed(),null,2));return JSON.parse(fs.readFileSync(DB,"utf8"))}
-function write(d){fs.writeFileSync(DB,JSON.stringify(d,null,2))}
-function calc(d,i){
-  const q=d.qr.filter(x=>x.institutionId===i);
-  const avg=q.length?q.reduce((s,x)=>s+x.rating,0)/q.length:0;
-  const qrScore=+(avg/5*30).toFixed(1);
-  const a=d.appeals.filter(x=>x.institutionId===i);
-  const resolved=a.filter(x=>x.status==="resolved").length;
-  const appealScore=+(a.length?resolved/a.length*30:0).toFixed(1);
-  const last=d.authority.filter(x=>x.institutionId===i).sort((x,y)=>y.id-x.id)[0];
-  const authorityScore=last?Math.max(0,Math.min(40,+last.score||0)):0;
-  return {qrCount:q.length,qrAvg:+avg.toFixed(2),qrScore,appealCount:a.length,resolved,appealScore,authorityScore,total:+(qrScore+appealScore+authorityScore).toFixed(1)}
-}
-app.use(express.json());
-app.use(express.urlencoded({extended:true}));
-app.use(express.static(path.join(__dirname,"public")));
-app.get("/api/health",(_,res)=>res.json({ok:true}));
-app.get("/api/dashboard",(_,res)=>{const d=read();res.json({institutions:d.institutions.map(i=>({...i,...calc(d,i.id)}))})});
-app.get("/api/institutions",(_,res)=>res.json(read().institutions));
-app.get("/api/qr/:institutionId", (req,res)=>{const d=read();res.json(d.qr.filter(x=>x.institutionId===+req.params.institutionId).sort((a,b)=>b.id-a.id))});
-app.post("/api/qr",(req,res)=>{const d=read();const rating=Math.max(1,Math.min(5,+req.body.rating||0));if(!req.body.institutionId||!rating)return res.status(400).json({error:"Ma'lumot yetarli emas"});d.qr.push({id:Date.now(),institutionId:+req.body.institutionId,rating,comment:String(req.body.comment||"").slice(0,500),createdAt:new Date().toISOString()});write(d);res.json({ok:true})});
-app.get("/api/appeals",(req,res)=>{const d=read();let a=d.appeals;if(req.query.institutionId)a=a.filter(x=>x.institutionId===+req.query.institutionId);res.json(a.sort((x,y)=>y.id-x.id))});
-app.post("/api/appeals",(req,res)=>{const d=read();if(!req.body.institutionId||!req.body.text)return res.status(400).json({error:"Ma'lumot yetarli emas"});d.appeals.push({id:Date.now(),institutionId:+req.body.institutionId,text:String(req.body.text).slice(0,1000),status:"new",createdAt:new Date().toISOString(),resolvedAt:null});write(d);res.json({ok:true})});
-app.post("/api/appeals/:id/resolve",(req,res)=>{const d=read();const a=d.appeals.find(x=>x.id===+req.params.id);if(!a)return res.status(404).json({error:"Topilmadi"});a.status="resolved";a.resolvedAt=new Date().toISOString();write(d);res.json({ok:true})});
-app.get("/api/authority",(req,res)=>{const d=read();res.json(d.authority.sort((a,b)=>b.id-a.id))});
-app.post("/api/authority",upload.single("file"),(req,res)=>{const d=read();const score=Math.max(0,Math.min(40,+req.body.score||0));if(!req.body.institutionId)return res.status(400).json({error:"Muassasa tanlanmagan"});d.authority.push({id:Date.now(),institutionId:+req.body.institutionId,score,note:String(req.body.note||"").slice(0,1000),fileName:req.file?req.file.originalname:null,storedName:req.file?req.file.filename:null,createdAt:new Date().toISOString()});write(d);res.json({ok:true})});
-app.get("*",(_,res)=>res.sendFile(path.join(__dirname,"public","index.html")));
-app.listen(PORT,"0.0.0.0",()=>console.log("Unified pilot running",PORT));
+const express=require('express');const path=require('path');const cookie=require('cookie-parser');const jwt=require('jsonwebtoken');const bcrypt=require('bcryptjs');const XLSX=require('xlsx');const {Pool}=require('pg');
+const app=express(),PORT=process.env.PORT||3000,pool=new Pool({connectionString:process.env.DATABASE_URL,ssl:process.env.NODE_ENV==='production'?{rejectUnauthorized:false}:false});
+const SECRET=process.env.JWT_SECRET||'change-this-secret';app.use(express.json({limit:'1mb'}));app.use(cookie());app.use(express.static(path.join(__dirname,'public')));
+async function init(){await pool.query(`CREATE TABLE IF NOT EXISTS institutions(id SERIAL PRIMARY KEY,district TEXT NOT NULL,name TEXT NOT NULL UNIQUE,type TEXT NOT NULL DEFAULT 'birlamchi',status TEXT NOT NULL DEFAULT 'pending',phone TEXT DEFAULT '',note TEXT DEFAULT '',created_at TIMESTAMPTZ DEFAULT NOW());CREATE TABLE IF NOT EXISTS users(id SERIAL PRIMARY KEY,username TEXT UNIQUE NOT NULL,password_hash TEXT NOT NULL,role TEXT NOT NULL CHECK(role IN ('admin','institution')),institution_id INTEGER REFERENCES institutions(id) ON DELETE CASCADE,created_at TIMESTAMPTZ DEFAULT NOW());CREATE TABLE IF NOT EXISTS staff(id SERIAL PRIMARY KEY,institution_id INTEGER NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,district TEXT NOT NULL,institution TEXT NOT NULL,type TEXT NOT NULL,full_name TEXT NOT NULL,pinfl VARCHAR(14) UNIQUE NOT NULL,position TEXT NOT NULL,specialty TEXT DEFAULT '',employment TEXT DEFAULT 'asosiy',phone TEXT DEFAULT '',note TEXT DEFAULT '',created_at TIMESTAMPTZ DEFAULT NOW(),updated_at TIMESTAMPTZ DEFAULT NOW());`);if(process.env.ADMIN_USERNAME&&process.env.ADMIN_PASSWORD){const h=await bcrypt.hash(process.env.ADMIN_PASSWORD,12);await pool.query(`INSERT INTO users(username,password_hash,role) VALUES($1,$2,'admin') ON CONFLICT(username) DO UPDATE SET password_hash=EXCLUDED.password_hash`,[process.env.ADMIN_USERNAME,h])}}
+function auth(req,res,next){try{const token=req.cookies.dmed_token;if(!token)return res.status(401).json({error:'unauthorized'});req.user=jwt.verify(token,SECRET);next()}catch{return res.status(401).json({error:'unauthorized'})}}function admin(req,res,next){if(req.user.role!=='admin')return res.status(403).json({error:'forbidden'});next()}
+app.get('/api/health',async(_,res)=>{try{await pool.query('SELECT 1');res.json({ok:true})}catch(e){res.status(503).json({ok:false})}});
+app.post('/api/login',async(req,res)=>{const {username,password}=req.body||{};const q=await pool.query('SELECT * FROM users WHERE username=$1',[String(username||'')]);const u=q.rows[0];if(!u||!await bcrypt.compare(String(password||''),u.password_hash))return res.status(401).json({error:'invalid_credentials'});const token=jwt.sign({id:u.id,role:u.role,institutionId:u.institution_id,username:u.username},SECRET,{expiresIn:'12h'});res.cookie('dmed_token',token,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',maxAge:43200000}).json({role:u.role,username:u.username})});app.post('/api/logout',(_,res)=>res.clearCookie('dmed_token').json({ok:true}));app.get('/api/me',auth,(req,res)=>res.json(req.user));
+app.get('/api/dashboard',auth,async(req,res)=>{const scope=req.user.role==='admin'?[]:[req.user.institutionId];const sw=scope.length?' WHERE institution_id=$1':'';const [s,i]=await Promise.all([pool.query('SELECT COUNT(*)::int count FROM staff'+sw,scope),req.user.role==='admin'?pool.query(`SELECT COUNT(*)::int total,COUNT(*) FILTER(WHERE status='done')::int done FROM institutions`):pool.query(`SELECT 1::int total,CASE WHEN status='done' THEN 1 ELSE 0 END::int done FROM institutions WHERE id=$1`,scope)]);res.json({staff:s.rows[0].count,institutions:i.rows[0]?.total||0,done:i.rows[0]?.done||0})});
+app.get('/api/institutions',auth,async(req,res)=>{if(req.user.role==='admin')return res.json((await pool.query('SELECT * FROM institutions ORDER BY district,name')).rows);res.json((await pool.query('SELECT * FROM institutions WHERE id=$1',[req.user.institutionId])).rows)});
+app.post('/api/institutions',auth,admin,async(req,res)=>{const b=req.body||{};if(!b.district||!b.name)return res.status(400).json({error:'required'});try{const r=await pool.query('INSERT INTO institutions(district,name,type,status,phone,note) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',[b.district,b.name,b.type||'birlamchi',b.status||'pending',b.phone||'',b.note||'']);res.status(201).json(r.rows[0])}catch(e){res.status(409).json({error:'duplicate'})}});
+app.put('/api/institutions/:id',auth,admin,async(req,res)=>{const b=req.body||{};const r=await pool.query('UPDATE institutions SET district=$1,name=$2,type=$3,status=$4,phone=$5,note=$6 WHERE id=$7 RETURNING *',[b.district,b.name,b.type,b.status,b.phone||'',b.note||'',req.params.id]);if(!r.rowCount)return res.status(404).json({error:'not_found'});res.json(r.rows[0])});app.delete('/api/institutions/:id',auth,admin,async(req,res)=>{await pool.query('DELETE FROM institutions WHERE id=$1',[req.params.id]);res.json({ok:true})});
+app.post('/api/institutions/:id/account',auth,admin,async(req,res)=>{const {username,password}=req.body||{};if(!username||String(password||'').length<8)return res.status(400).json({error:'weak_credentials'});const h=await bcrypt.hash(password,12);try{await pool.query(`INSERT INTO users(username,password_hash,role,institution_id) VALUES($1,$2,'institution',$3) ON CONFLICT(username) DO UPDATE SET password_hash=EXCLUDED.password_hash,institution_id=EXCLUDED.institution_id`,[username,h,req.params.id]);res.json({ok:true})}catch(e){res.status(400).json({error:'account_failed'})}});
+app.get('/api/staff',auth,async(req,res)=>{const r=req.user.role==='admin'?await pool.query('SELECT * FROM staff ORDER BY created_at DESC'):await pool.query('SELECT * FROM staff WHERE institution_id=$1 ORDER BY created_at DESC',[req.user.institutionId]);res.json(r.rows)});
+app.post('/api/staff',auth,async(req,res)=>{const b=req.body||{};const iid=req.user.role==='admin'?Number(b.institutionId):req.user.institutionId;if(!iid||!b.fullName||!b.position||!/^\d{14}$/.test(String(b.pinfl||'')))return res.status(400).json({error:'invalid'});const iq=await pool.query('SELECT * FROM institutions WHERE id=$1',[iid]);const ins=iq.rows[0];if(!ins)return res.status(404).json({error:'institution_not_found'});try{const r=await pool.query('INSERT INTO staff(institution_id,district,institution,type,full_name,pinfl,position,specialty,employment,phone,note) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *',[iid,ins.district,ins.name,ins.type,b.fullName,b.pinfl,b.position,b.specialty||'',b.employment||'asosiy',b.phone||'',b.note||'']);res.status(201).json(r.rows[0])}catch(e){res.status(409).json({error:'duplicate_pinfl'})}});
+app.put('/api/staff/:id',auth,async(req,res)=>{const b=req.body||{};const where=req.user.role==='admin'?'id=$9':'id=$9 AND institution_id=$10',args=[b.fullName,b.pinfl,b.position,b.specialty||'',b.employment||'asosiy',b.phone||'',b.note||'',new Date(),req.params.id];if(req.user.role!=='admin')args.push(req.user.institutionId);if(!b.fullName||!b.position||!/^\d{14}$/.test(String(b.pinfl||'')))return res.status(400).json({error:'invalid'});try{const r=await pool.query(`UPDATE staff SET full_name=$1,pinfl=$2,position=$3,specialty=$4,employment=$5,phone=$6,note=$7,updated_at=$8 WHERE ${where} RETURNING *`,args);if(!r.rowCount)return res.status(404).json({error:'not_found'});res.json(r.rows[0])}catch(e){res.status(409).json({error:'duplicate_pinfl'})}});
+app.delete('/api/staff/:id',auth,async(req,res)=>{const r=req.user.role==='admin'?await pool.query('DELETE FROM staff WHERE id=$1',[req.params.id]):await pool.query('DELETE FROM staff WHERE id=$1 AND institution_id=$2',[req.params.id,req.user.institutionId]);if(!r.rowCount)return res.status(404).json({error:'not_found'});res.json({ok:true})});
+app.post('/api/submit',auth,async(req,res)=>{if(req.user.role!=='institution')return res.status(403).json({error:'forbidden'});await pool.query(`UPDATE institutions SET status='done' WHERE id=$1`,[req.user.institutionId]);res.json({ok:true})});
+app.get('/api/export/staff.xlsx',auth,async(req,res)=>{const rows=req.user.role==='admin'?(await pool.query('SELECT district,institution,type,full_name,pinfl,position,specialty,employment,phone,note FROM staff ORDER BY district,institution,full_name')).rows:(await pool.query('SELECT district,institution,type,full_name,pinfl,position,specialty,employment,phone,note FROM staff WHERE institution_id=$1 ORDER BY full_name',[req.user.institutionId])).rows;const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Xodimlar');const out=XLSX.write(wb,{type:'buffer',bookType:'xlsx'});res.setHeader('Content-Disposition','attachment; filename="tibbiyot_xodimlari.xlsx"');res.type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet').send(out)});
+app.get('*',(_,res)=>res.sendFile(path.join(__dirname,'public','index.html')));init().then(()=>app.listen(PORT,'0.0.0.0',()=>console.log('DMED production',PORT))).catch(e=>{console.error(e);process.exit(1)});
