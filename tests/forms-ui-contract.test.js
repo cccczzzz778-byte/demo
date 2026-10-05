@@ -20,6 +20,15 @@ test('institution account form includes password visibility control',()=>{
   assert.match(js,/aria-label=["'][^"']*Parol[^"']*["']/);
 });
 
+test('modal forms use a form-level busy lock to prevent duplicate Enter submits',()=>{
+  const staff=read('staff.js');
+  const inst=read('institutions.js');
+  assert.match(staff,/DMED\.ui\.beginSubmit\(form\)/);
+  assert.match(staff,/DMED\.ui\.endSubmit\(form\)/);
+  assert.match(inst,/DMED\.ui\.beginSubmit\(form\)/);
+  assert.match(inst,/DMED\.ui\.endSubmit\(form\)/);
+});
+
 test('icon-only table actions are labeled for keyboard and assistive technology',()=>{
   const staff=read('staff.js');
   const inst=read('institutions.js');
