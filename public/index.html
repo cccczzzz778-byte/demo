@@ -1,8 +1,160 @@
-<!doctype html><html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DMED DATA</title><style>*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#f3f6f5;color:#182521}button,input,select{font:inherit}.hidden{display:none!important}.login{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#073e36,#13806e)}.card{background:#fff;border-radius:18px;padding:32px;width:min(420px,92vw);box-shadow:0 25px 70px #00251f55}.card h1{margin:8px 0}.card p{color:#71807c}.field{display:grid;gap:6px;margin:14px 0}.field input,.field select{padding:12px;border:1px solid #d9e2df;border-radius:10px}.primary{border:0;background:#087565;color:white;padding:11px 16px;border-radius:9px;cursor:pointer}.outline{border:1px solid #cad7d3;background:white;padding:10px 14px;border-radius:9px;cursor:pointer}.full{width:100%}.app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}.side{background:#093d35;color:white;padding:24px 15px}.brand{font-weight:800;font-size:21px;padding:8px 10px 25px}.brand small{display:block;font-weight:400;font-size:11px;opacity:.65;margin-top:4px}.nav button{display:block;width:100%;text-align:left;border:0;background:transparent;color:#d8ebe7;padding:12px;border-radius:9px;margin:3px 0;cursor:pointer}.nav button.active,.nav button:hover{background:#ffffff18;color:white}.main{padding:28px;overflow:auto}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}.top h1{margin:0;font-size:25px}.top p{margin:5px 0;color:#74817e}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:20px}.stat,.panel{background:white;border:1px solid #e1e8e6;border-radius:14px}.stat{padding:20px}.stat b{font-size:30px;display:block}.stat small{color:#788480}.panel{padding:18px}.toolbar{display:flex;justify-content:space-between;gap:10px;margin-bottom:15px}.toolbar input{padding:10px;border:1px solid #dbe3e1;border-radius:9px;min-width:260px}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:11px 9px;border-bottom:1px solid #edf1f0;text-align:left;white-space:nowrap}th{color:#687572;background:#fafcfc}.table{overflow:auto}.badge{padding:4px 8px;border-radius:99px;background:#e4f4ef;color:#176a59}.done{color:#08704f;font-weight:700}.pending{color:#a46713;font-weight:700}.actions button{border:0;background:transparent;cursor:pointer;padding:5px}.modal{position:fixed;inset:0;background:#001c1766;display:grid;place-items:center;padding:20px}.box{background:white;width:min(760px,96vw);max-height:90vh;overflow:auto;border-radius:16px;padding:24px}.box h2{margin-top:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.msg{color:#b32828;margin:10px 0}.right{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.lang{position:fixed;right:18px;bottom:18px}.submitBox{display:flex;justify-content:space-between;align-items:center;gap:20px}.logout{color:#9e342c}@media(max-width:800px){.app{grid-template-columns:1fr}.side{padding:12px}.brand{padding:5px 8px 12px}.nav{display:flex;overflow:auto}.nav button{white-space:nowrap}.main{padding:16px}.stats{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.toolbar{flex-direction:column}.toolbar input{min-width:0;width:100%}}</style></head><body><div id="login" class="login"><div class="card"><b>DMED DATA</b><h1 id="loginTitle">Tizimga kirish</h1><p id="loginSub">Tibbiyot xodimlari ma’lumotlar bazasi</p><div class="field"><label>Login</label><input id="username" autocomplete="username"></div><div class="field"><label id="passwordLabel">Parol</label><input id="password" type="password" autocomplete="current-password"></div><div id="loginMsg" class="msg"></div><button class="primary full" onclick="login()" id="loginBtn">Kirish</button></div></div><div id="app" class="app hidden"><aside class="side"><div class="brand">DMED DATA<small id="roleText"></small></div><div class="nav"><button data-tab="dash" class="active" onclick="tab('dash',this)">🏠 <span data-t="home">Bosh sahifa</span></button><button data-tab="staff" onclick="tab('staff',this)">👥 <span data-t="staff">Xodimlar</span></button><button id="instNav" data-tab="inst" onclick="tab('inst',this)">🏥 <span data-t="institutions">Muassasalar</span></button><button data-tab="report" onclick="tab('report',this)">📊 <span data-t="reports">Hisobotlar</span></button><button class="logout" onclick="logout()">↪ <span data-t="logout">Chiqish</span></button></div></aside><main class="main"><div class="top"><div><h1 id="pageTitle">Bosh sahifa</h1><p>DMED · Buxoro viloyati</p></div><button class="outline" onclick="toggleLang()" id="langBtn">Русский</button></div><section id="dash"><div class="stats"><div class="stat"><b id="sStaff">0</b><small data-t="allStaff">Jami xodimlar</small></div><div class="stat"><b id="sInst">0</b><small data-t="institutions">Muassasalar</small></div><div class="stat"><b id="sDone">0</b><small data-t="submitted">Topshirgan</small></div></div><div id="submitPanel" class="panel hidden"><div class="submitBox"><div><h3 data-t="finish">Ma’lumotlarni yakunlash</h3><p data-t="finishDesc">Barcha xodimlarni tekshirib, boshqarmaga topshiring.</p></div><button class="primary" onclick="submitData()" data-t="submit">Topshirish</button></div></div></section><section id="staff" class="hidden panel"><div class="toolbar"><input id="search" placeholder="Qidirish..." oninput="renderStaff()"><div><button class="outline" onclick="downloadExcel()">⬇ Excel</button> <button class="primary" onclick="openStaff()" data-t="addStaff">+ Xodim qo‘shish</button></div></div><div class="table"><table><thead><tr><th>№</th><th data-t="district">Tuman</th><th data-t="institution">Muassasa</th><th>F.I.O.</th><th>PINFL</th><th data-t="position">Lavozim</th><th data-t="specialty">Mutaxassislik</th><th data-t="phone">Telefon</th><th></th></tr></thead><tbody id="staffBody"></tbody></table></div></section><section id="inst" class="hidden panel"><div class="toolbar"><b data-t="institutionControl">Muassasalar nazorati</b><button class="primary" onclick="openInst()" data-t="addInst">+ Muassasa qo‘shish</button></div><div class="table"><table><thead><tr><th>№</th><th data-t="district">Tuman</th><th data-t="institution">Muassasa</th><th data-t="type">Turi</th><th data-t="status">Holati</th><th data-t="phone">Telefon</th><th></th></tr></thead><tbody id="instBody"></tbody></table></div></section><section id="report" class="hidden"><div class="panel"><h2 data-t="reports">Hisobotlar</h2><p data-t="reportDesc">Yig‘ilgan ma’lumotlarni haqiqiy Excel (.xlsx) formatida yuklab oling.</p><button class="primary" onclick="downloadExcel()">⬇ Excel (.xlsx)</button></div></section></main></div><div id="modal" class="modal hidden"><div class="box" id="modalBox"></div></div><script>
-let me=null,staff=[],institutions=[],lang='uz';const T={uz:{home:'Bosh sahifa',staff:'Xodimlar',institutions:'Muassasalar',reports:'Hisobotlar',logout:'Chiqish',allStaff:'Jami xodimlar',submitted:'Topshirgan',finish:'Ma’lumotlarni yakunlash',finishDesc:'Barcha xodimlarni tekshirib, boshqarmaga topshiring.',submit:'Topshirish',addStaff:'+ Xodim qo‘shish',district:'Tuman',institution:'Muassasa',position:'Lavozim',specialty:'Mutaxassislik',phone:'Telefon',institutionControl:'Muassasalar nazorati',addInst:'+ Muassasa qo‘shish',type:'Turi',status:'Holati',reportDesc:'Yig‘ilgan ma’lumotlarni haqiqiy Excel (.xlsx) formatida yuklab oling.'},ru:{home:'Главная',staff:'Сотрудники',institutions:'Учреждения',reports:'Отчёты',logout:'Выход',allStaff:'Всего сотрудников',submitted:'Сдано',finish:'Завершить данные',finishDesc:'Проверьте сотрудников и отправьте данные в управление.',submit:'Отправить',addStaff:'+ Добавить сотрудника',district:'Район',institution:'Учреждение',position:'Должность',specialty:'Специальность',phone:'Телефон',institutionControl:'Контроль учреждений',addInst:'+ Добавить учреждение',type:'Тип',status:'Статус',reportDesc:'Скачайте собранные данные в настоящем формате Excel (.xlsx).'}};
-async function req(url,opt={}){const r=await fetch(url,{headers:{'Content-Type':'application/json',...(opt.headers||{})},...opt});if(r.status===401){showLogin();throw Error('auth')}const data=await r.json().catch(()=>({}));if(!r.ok)throw Error(data.error||'error');return data}async function login(){try{loginMsg.textContent='';await req('/api/login',{method:'POST',body:JSON.stringify({username:username.value,password:password.value})});await boot()}catch(e){loginMsg.textContent=lang==='uz'?'Login yoki parol noto‘g‘ri':'Неверный логин или пароль'}}async function logout(){await fetch('/api/logout',{method:'POST'});showLogin()}function showLogin(){login.classList.remove('hidden');app.classList.add('hidden')}async function boot(){me=await req('/api/me');login.classList.add('hidden');app.classList.remove('hidden');roleText.textContent=me.role==='admin'?'Administrator':'Muassasa kabineti';instNav.classList.toggle('hidden',me.role!=='admin');submitPanel.classList.toggle('hidden',me.role!=='institution');await refresh()}
-async function refresh(){[staff,institutions]=await Promise.all([req('/api/staff'),req('/api/institutions')]);const d=await req('/api/dashboard');sStaff.textContent=d.staff;sInst.textContent=d.institutions;sDone.textContent=d.done;renderStaff();renderInst()}function tab(id,b){['dash','staff','inst','report'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');pageTitle.textContent=T[lang][id==='dash'?'home':id==='staff'?'staff':id==='inst'?'institutions':'reports']}
-function renderStaff(){const q=(search?.value||'').toLowerCase();staffBody.innerHTML=staff.filter(x=>[x.full_name,x.pinfl,x.institution,x.district].join(' ').toLowerCase().includes(q)).map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.district)}</td><td>${esc(x.institution)}</td><td><b>${esc(x.full_name)}</b></td><td>${esc(x.pinfl)}</td><td>${esc(x.position)}</td><td>${esc(x.specialty)}</td><td>${esc(x.phone)}</td><td class="actions"><button onclick='openStaff(${JSON.stringify(x)})'>✏️</button><button onclick="delStaff(${x.id})">🗑️</button></td></tr>`).join('')}function renderInst(){instBody.innerHTML=institutions.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.district)}</td><td><b>${esc(x.name)}</b></td><td>${esc(x.type)}</td><td class="${x.status==='done'?'done':'pending'}">${x.status==='done'?'Topshirgan':'Topshirmagan'}</td><td>${esc(x.phone)}</td><td class="actions"><button onclick='openInst(${JSON.stringify(x)})'>✏️</button><button onclick="account(${x.id})">🔑</button><button onclick="delInst(${x.id})">🗑️</button></td></tr>`).join('')}function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function openStaff(x){const iid=x?.institution_id||institutions[0]?.id||'';modalBox.innerHTML=`<h2>${x?'Xodimni tahrirlash':'Yangi xodim'}</h2>${me.role==='admin'?`<div class="field"><label>Muassasa</label><select id="fInst">${institutions.map(i=>`<option value="${i.id}" ${i.id==iid?'selected':''}>${esc(i.name)}</option>`).join('')}</select></div>`:''}<div class="grid"><div class="field"><label>F.I.O.</label><input id="fName" value="${esc(x?.full_name||'')}"></div><div class="field"><label>PINFL</label><input id="fPinfl" maxlength="14" value="${esc(x?.pinfl||'')}"></div><div class="field"><label>Lavozim</label><input id="fPos" value="${esc(x?.position||'')}"></div><div class="field"><label>Mutaxassislik</label><input id="fSpec" value="${esc(x?.specialty||'')}"></div><div class="field"><label>Stavka</label><select id="fEmp"><option value="asosiy">Asosiy</option><option value="orindosh">O‘rindosh</option></select></div><div class="field"><label>Telefon</label><input id="fPhone" value="${esc(x?.phone||'')}"></div></div><div class="field"><label>Izoh</label><input id="fNote" value="${esc(x?.note||'')}"></div><div id="mMsg" class="msg"></div><div class="right"><button class="outline" onclick="closeM()">Bekor</button><button class="primary" onclick="saveStaff(${x?.id||0})">Saqlash</button></div>`;modal.classList.remove('hidden')}async function saveStaff(id){const body={institutionId:me.role==='admin'?+fInst.value:undefined,fullName:fName.value,pinfl:fPinfl.value.replace(/\D/g,''),position:fPos.value,specialty:fSpec.value,employment:fEmp.value,phone:fPhone.value,note:fNote.value};try{await req('/api/staff'+(id?'/'+id:''),{method:id?'PUT':'POST',body:JSON.stringify(body)});closeM();refresh()}catch(e){mMsg.textContent=e.message==='duplicate_pinfl'?'Bu PINFL avval kiritilgan':'Ma’lumotlarni tekshiring'}}async function delStaff(id){if(confirm('O‘chirilsinmi?')){await req('/api/staff/'+id,{method:'DELETE'});refresh()}}
-function openInst(x){modalBox.innerHTML=`<h2>${x?'Muassasani tahrirlash':'Muassasa qo‘shish'}</h2><div class="grid"><div class="field"><label>Tuman / shahar</label><input id="iDistrict" value="${esc(x?.district||'')}"></div><div class="field"><label>Muassasa nomi</label><input id="iName" value="${esc(x?.name||'')}"></div><div class="field"><label>Turi</label><select id="iType"><option value="birlamchi">Birlamchi</option><option value="ikkilamchi">Ikkilamchi</option><option value="uchlamchi">Uchlamchi</option></select></div><div class="field"><label>Holati</label><select id="iStatus"><option value="pending">Topshirmagan</option><option value="done">Topshirgan</option></select></div><div class="field"><label>Telefon</label><input id="iPhone" value="${esc(x?.phone||'')}"></div><div class="field"><label>Izoh</label><input id="iNote" value="${esc(x?.note||'')}"></div></div><div id="mMsg" class="msg"></div><div class="right"><button class="outline" onclick="closeM()">Bekor</button><button class="primary" onclick="saveInst(${x?.id||0})">Saqlash</button></div>`;if(x){iType.value=x.type;iStatus.value=x.status}modal.classList.remove('hidden')}async function saveInst(id){try{await req('/api/institutions'+(id?'/'+id:''),{method:id?'PUT':'POST',body:JSON.stringify({district:iDistrict.value,name:iName.value,type:iType.value,status:iStatus.value,phone:iPhone.value,note:iNote.value})});closeM();refresh()}catch(e){mMsg.textContent='Saqlashda xatolik'}}async function delInst(id){if(confirm('Muassasa va unga tegishli ma’lumotlar o‘chadi. Davom etilsinmi?')){await req('/api/institutions/'+id,{method:'DELETE'});refresh()}}function account(id){modalBox.innerHTML=`<h2>Muassasa login-paroli</h2><div class="field"><label>Login</label><input id="aUser"></div><div class="field"><label>Yangi parol (kamida 8 belgi)</label><input id="aPass" type="password"></div><div id="mMsg" class="msg"></div><div class="right"><button class="outline" onclick="closeM()">Bekor</button><button class="primary" onclick="saveAccount(${id})">Saqlash</button></div>`;modal.classList.remove('hidden')}async function saveAccount(id){try{await req('/api/institutions/'+id+'/account',{method:'POST',body:JSON.stringify({username:aUser.value,password:aPass.value})});closeM();alert('Login-parol saqlandi')}catch(e){mMsg.textContent='Login yoki parol talabga mos emas'}}function closeM(){modal.classList.add('hidden')}async function submitData(){if(confirm('Ma’lumotlar boshqarmaga topshirilsinmi?')){await req('/api/submit',{method:'POST'});refresh()}}function downloadExcel(){location.href='/api/export/staff.xlsx'}function toggleLang(){lang=lang==='uz'?'ru':'uz';document.querySelectorAll('[data-t]').forEach(e=>e.textContent=T[lang][e.dataset.t]||e.textContent);langBtn.textContent=lang==='uz'?'Русский':'O‘zbekcha';loginTitle.textContent=lang==='uz'?'Tizimga kirish':'Вход в систему';loginBtn.textContent=lang==='uz'?'Kirish':'Войти'}modal.addEventListener('click',e=>{if(e.target===modal)closeM()});fetch('/api/me').then(r=>r.ok?boot():showLogin()).catch(showLogin);
-</script><button id="langBtnLogin" class="outline lang" onclick="toggleLang()">UZ / RU</button></body></html>
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b5d50">
+  <title>DMED DATA</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <section id="loginScreen" class="login-screen">
+    <div class="login-card" aria-labelledby="loginTitle">
+      <div class="brand-mark">DMED DATA</div>
+      <h1 id="loginTitle">Tizimga kirish</h1>
+      <p id="loginSubtitle">Tibbiyot xodimlari ma’lumotlar bazasi</p>
+      <form id="loginForm" novalidate>
+        <div class="form-field">
+          <label for="username">Login</label>
+          <input id="username" name="username" autocomplete="username" required maxlength="80">
+          <small class="field-error" data-error-for="username"></small>
+        </div>
+        <div class="form-field">
+          <label for="password">Parol</label>
+          <div class="password-wrap">
+            <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128">
+            <button id="toggleLoginPassword" class="icon-btn password-toggle" type="button" aria-label="Parolni ko‘rsatish" title="Parolni ko‘rsatish">👁</button>
+          </div>
+          <small id="capsLockWarning" class="caps-warning hidden">Caps Lock yoqilgan</small>
+          <small class="field-error" data-error-for="password"></small>
+        </div>
+        <div id="loginMessage" class="form-message" role="alert" aria-live="polite"></div>
+        <button id="loginBtn" type="submit" class="btn btn-primary btn-block">Kirish</button>
+      </form>
+    </div>
+  </section>
+
+  <div id="appShell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-mark">DMED DATA</div>
+        <small id="roleText"></small>
+      </div>
+      <nav class="nav" aria-label="Asosiy navigatsiya">
+        <button class="nav-btn active" type="button" data-tab="dashboard">🏠 <span data-i18n="home">Bosh sahifa</span></button>
+        <button class="nav-btn" type="button" data-tab="staff">👥 <span data-i18n="staff">Xodimlar</span></button>
+        <button id="institutionsNav" class="nav-btn" type="button" data-tab="institutions">🏥 <span data-i18n="institutions">Muassasalar</span></button>
+        <button class="nav-btn" type="button" data-tab="reports">📊 <span data-i18n="reports">Hisobotlar</span></button>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logoutBtn" class="nav-btn danger" type="button">↪ <span data-i18n="logout">Chiqish</span></button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <h1 id="pageTitle">Bosh sahifa</h1>
+          <p>DMED · Buxoro viloyati</p>
+        </div>
+        <div class="topbar-actions">
+          <span id="userChip" class="user-chip"></span>
+          <button id="languageBtn" class="btn btn-secondary" type="button">Русский</button>
+        </div>
+      </header>
+
+      <section id="dashboardView" class="view">
+        <div class="stats-grid">
+          <article class="stat-card"><span>Jami xodimlar</span><strong id="statStaff">0</strong></article>
+          <article class="stat-card"><span>Muassasalar</span><strong id="statInstitutions">0</strong></article>
+          <article class="stat-card"><span>Topshirgan</span><strong id="statDone">0</strong></article>
+        </div>
+        <div id="submitPanel" class="panel hidden">
+          <div class="panel-row">
+            <div>
+              <h2>Ma’lumotlarni yakunlash</h2>
+              <p>Barcha xodimlarni tekshirib, boshqarmaga topshiring.</p>
+            </div>
+            <button id="submitDataBtn" class="btn btn-primary" type="button">Topshirish</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="staffView" class="view hidden">
+        <div class="panel">
+          <div id="staffScopeBar" class="scope-bar hidden">
+            <div>
+              <span class="scope-label">Tanlangan muassasa</span>
+              <strong id="staffScopeName"></strong>
+              <span id="staffScopeCount" class="badge"></span>
+            </div>
+            <button id="clearStaffScopeBtn" class="btn btn-secondary" type="button">Barcha xodimlar</button>
+          </div>
+          <div class="toolbar">
+            <div class="search-wrap">
+              <label class="sr-only" for="staffSearch">Xodimlarni qidirish</label>
+              <input id="staffSearch" type="search" placeholder="F.I.O., PINFL, muassasa yoki tuman bo‘yicha qidirish...">
+            </div>
+            <div class="toolbar-actions">
+              <button id="exportStaffBtn" class="btn btn-secondary" type="button">⬇ Excel</button>
+              <button id="importStaffBtn" class="btn btn-secondary hidden" type="button">⬆ Excel yuklash</button>
+              <button id="addStaffBtn" class="btn btn-primary" type="button">+ Xodim qo‘shish</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>№</th><th>Tuman</th><th>Muassasa</th><th>F.I.O.</th><th>PINFL</th><th>Lavozim</th><th>Mutaxassislik</th><th>Stavka</th><th>Telefon</th><th>Amallar</th></tr></thead>
+              <tbody id="staffBody"></tbody>
+            </table>
+          </div>
+          <div id="staffEmpty" class="empty-state hidden">Bu bo‘limda xodimlar topilmadi.</div>
+        </div>
+      </section>
+
+      <section id="institutionsView" class="view hidden">
+        <div class="panel">
+          <div class="toolbar">
+            <div>
+              <h2>Muassasalar nazorati</h2>
+              <p class="muted">Muassasa nomini bosib, o‘sha muassasa kiritgan xodimlarni ko‘ring.</p>
+            </div>
+            <button id="addInstitutionBtn" class="btn btn-primary" type="button">+ Muassasa qo‘shish</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>№</th><th>Tuman</th><th>Muassasa</th><th>Turi</th><th>Xodimlar</th><th>Holati</th><th>Telefon</th><th>Amallar</th></tr></thead>
+              <tbody id="institutionsBody"></tbody>
+            </table>
+          </div>
+          <div id="institutionsEmpty" class="empty-state hidden">Muassasalar topilmadi.</div>
+        </div>
+      </section>
+
+      <section id="reportsView" class="view hidden">
+        <div class="panel report-card">
+          <div>
+            <h2>Hisobotlar</h2>
+            <p>Yig‘ilgan ma’lumotlarni Excel (.xlsx) formatida yuklab oling.</p>
+          </div>
+          <button id="reportExportBtn" class="btn btn-primary" type="button">⬇ Excel hisobot</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" data-modal-close></div>
+    <div id="modalBox" class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle"></div>
+  </div>
+
+  <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="/ui.js" defer></script>
+  <script src="/auth.js" defer></script>
+  <script src="/staff.js" defer></script>
+  <script src="/institutions.js" defer></script>
+  <script src="/import.js" defer></script>
+  <script src="/reports.js" defer></script>
+  <script src="/app.js" defer></script>
+</body>
+</html>
