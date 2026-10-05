@@ -151,8 +151,9 @@
   async function save(event,id){
     event.preventDefault();
     const form=event.currentTarget;
+    if(!DMED.ui.beginSubmit(form))return;
     const payload=validateForm(form);
-    if(!payload)return;
+    if(!payload){DMED.ui.endSubmit(form);return;}
     const button=document.getElementById('staffSaveBtn');
     DMED.ui.setModalBusy(true);
     DMED.ui.setBusy(button,true,{busyText:'Saqlanmoqda...'});
@@ -166,6 +167,7 @@
     }finally{
       DMED.ui.setModalBusy(false);
       DMED.ui.setBusy(button,false,{idleText:'Saqlash'});
+      DMED.ui.endSubmit(form);
     }
   }
 
