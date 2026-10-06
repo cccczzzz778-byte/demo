@@ -18,3 +18,10 @@ test('startup installs integrity migration before optional test-account seeding'
   assert.match(source,/await pool\.query\(INSTITUTION_INTEGRITY_SQL\)/);
   assert.ok(source.indexOf('await pool.query(INSTITUTION_INTEGRITY_SQL)') < source.indexOf('if(!username||!password)'));
 });
+
+test('startup never overwrites existing credentials or institution data',()=>{
+  const source=fs.readFileSync(path.join(root,'seed-test.js'),'utf8');
+  assert.doesNotMatch(source,/ON CONFLICT\(username\) DO UPDATE/i);
+  assert.doesNotMatch(source,/password_hash\s*=\s*EXCLUDED\.password_hash/i);
+  assert.doesNotMatch(source,/ON CONFLICT\(name\) DO UPDATE SET district/i);
+});
