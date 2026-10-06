@@ -1,5 +1,6 @@
 const {Pool}=require('pg');
 const bcrypt=require('bcryptjs');
+const {INSTITUTION_INTEGRITY_SQL}=require('./lib/institution-integrity');
 
 const pool=new Pool({
   connectionString:process.env.DATABASE_URL,
@@ -10,6 +11,7 @@ async function run(){
   const username=process.env.TEST_USERNAME;
   const password=process.env.TEST_PASSWORD;
   const institutionName=process.env.TEST_INSTITUTION||'Test muassasa';
+  await pool.query(INSTITUTION_INTEGRITY_SQL);
   if(!username||!password){
     console.log('TEST_ACCOUNT_SKIPPED');
     return;
