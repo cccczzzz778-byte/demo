@@ -70,6 +70,7 @@ async function init(){
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );
+    ALTER TABLE institutions ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT FALSE;
     ALTER TABLE staff ALTER COLUMN employment SET DEFAULT 'asosiy';
     UPDATE staff SET employment='asosiy' WHERE lower(trim(coalesce(employment,''))) IN ('','1','1.0','asosiy','асосий');
     UPDATE staff SET employment='orindosh' WHERE lower(trim(coalesce(employment,''))) IN ('0.5','0,5','0.25','0,25','orindosh','o''rindosh','ўриндош','уриндош');
@@ -130,23 +131,29 @@ app.get('/api/me',auth,(req,res)=>res.json(req.user));
 
 app.get('/api/dashboard',auth,asyncHandler(async(req,res)=>{
   if(req.user.role==='admin'){
-    const [staffCount,instCount]=await Promise.all([pool.query('SELECT COUNT(*)::int count FROM staff'),pool.query(`SELECT COUNT(*)::int total,COUNT(*) FILTER(WHERE status='done')::int done FROM institutions`)]);
+    const [staffCount,instCount]=await Promise.all([pool.query('SELECT COUNT(*)::int count FROM staff'),pool.query(`SELECT COUNT(*) FILTER(WHERE archived=FALSE)::int total,COUNT(*) FILTER(WHERE archived=FALSE AND status='done')::int done FROM institutions`)]);
     return res.json({staff:staffCount.rows[0].count,institutions:instCount.rows[0].total,done:instCount.rows[0].done});
   }
   const [staffCount,inst]=await Promise.all([pool.query('SELECT COUNT(*)::int count FROM staff WHERE institution_id=$1',[req.user.institutionId]),pool.query(`SELECT CASE WHEN status='done' THEN 1 ELSE 0 END::int done FROM institutions WHERE id=$1`,[req.user.institutionId])]);
   res.json({staff:staffCount.rows[0].count,institutions:1,done:inst.rows[0]?.done||0});
 }));
 
-app.get('/api/institutions',auth,asyncHandler(async(req,res)=>{if(req.user.role==='admin')return res.json((await pool.query('SELECT * FROM institutions ORDER BY district,name')).rows);res.json((await pool.query('SELECT * FROM institutions WHERE id=$1',[req.user.institutionId])).rows);}));
+app.get('/api/institutions',auth,asyncHandler(async(req,res)=>{if(req.user.role==='admin')return res.json((await pool.query('SELECT * FROM institutions WHERE archived=FALSE ORDER BY district,name')).rows);res.json((await pool.query('SELECT * FROM institutions WHERE id=$1',[req.user.institutionId])).rows);}));
 app.post('/api/institutions',auth,admin,asyncHandler(async(req,res)=>{
   const checked=validateInstitutionInput({...req.body,status:req.body?.status||'pending',type:req.body?.type||'birlamchi'});if(!checked.ok)return validationError(res,checked);const v=checked.value;
-  try{const r=await pool.query('INSERT INTO institutions(district,name,type,status,phone,note) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',[v.district,v.name,v.type,v.status,v.phone,v.note]);res.status(201).json(r.rows[0]);}catch(e){if(e.code==='23505')return res.status(409).json({error:'duplicate_institution',field:'name'});throw e;}
+  try{
+    const r=await pool.query(`INSERT INTO institutions(district,name,type,status,phone,note,archived) VALUES($1,$2,$3,$4,$5,$6,FALSE)
+      ON CONFLICT(name) DO UPDATE SET district=EXCLUDED.district,type=EXCLUDED.type,status=EXCLUDED.status,phone=EXCLUDED.phone,note=EXCLUDED.note,archived=FALSE
+      WHERE institutions.archived=TRUE RETURNING *`,[v.district,v.name,v.type,v.status,v.phone,v.note]);
+    if(!r.rowCount)return res.status(409).json({error:'duplicate_institution',field:'name'});
+    res.status(201).json(r.rows[0]);
+  }catch(e){if(e.code==='23505')return res.status(409).json({error:'duplicate_institution',field:'name'});throw e;}
 }));
 app.put('/api/institutions/:id',auth,admin,asyncHandler(async(req,res)=>{
   const id=positiveInt(req.params.id);if(!id)return res.status(400).json({error:'invalid_id'});const checked=validateInstitutionInput({...req.body,type:req.body?.type||'birlamchi'});if(!checked.ok)return validationError(res,checked);const v=checked.value;
-  try{const r=await pool.query('UPDATE institutions SET district=$1,name=$2,type=$3,status=$4,phone=$5,note=$6 WHERE id=$7 RETURNING *',[v.district,v.name,v.type,v.status,v.phone,v.note,id]);if(!r.rowCount)return res.status(404).json({error:'not_found'});res.json(r.rows[0]);}catch(e){if(e.code==='23505')return res.status(409).json({error:'duplicate_institution',field:'name'});throw e;}
+  try{const r=await pool.query('UPDATE institutions SET district=$1,name=$2,type=$3,status=$4,phone=$5,note=$6 WHERE id=$7 AND archived=FALSE RETURNING *',[v.district,v.name,v.type,v.status,v.phone,v.note,id]);if(!r.rowCount)return res.status(404).json({error:'not_found'});res.json(r.rows[0]);}catch(e){if(e.code==='23505')return res.status(409).json({error:'duplicate_institution',field:'name'});throw e;}
 }));
-app.delete('/api/institutions/:id',auth,admin,asyncHandler(async(req,res)=>{const id=positiveInt(req.params.id);if(!id)return res.status(400).json({error:'invalid_id'});const r=await pool.query('DELETE FROM institutions WHERE id=$1',[id]);if(!r.rowCount)return res.status(404).json({error:'not_found'});res.json({ok:true});}));
+app.delete('/api/institutions/:id',auth,admin,asyncHandler(async(req,res)=>{const id=positiveInt(req.params.id);if(!id)return res.status(400).json({error:'invalid_id'});const r=await pool.query('UPDATE institutions SET archived=TRUE WHERE id=$1 AND archived=FALSE RETURNING id',[id]);if(!r.rowCount)return res.status(404).json({error:'not_found'});res.json({ok:true});}));
 app.post('/api/institutions/:id/account',auth,admin,asyncHandler(async(req,res)=>{
   const institutionId=positiveInt(req.params.id);if(!institutionId)return res.status(400).json({error:'invalid_id'});if(!await getInstitution(institutionId))return res.status(404).json({error:'institution_not_found'});const checked=validateAccountInput(req.body);if(!checked.ok)return validationError(res,checked);const {username,password}=checked.value;
   const existing=(await pool.query('SELECT role,institution_id FROM users WHERE username=$1',[username])).rows[0];if(existing&&(existing.role!=='institution'||Number(existing.institution_id)!==institutionId))return res.status(409).json({error:'username_taken',field:'username'});
