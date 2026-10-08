@@ -97,6 +97,7 @@
               <input id="staffSearch" type="search" placeholder="F.I.O., PINFL, muassasa yoki tuman bo‘yicha qidirish..." data-i18n-placeholder="searchStaffPlaceholder">
             </div>
             <div class="toolbar-actions">
+              <button id="bulkDeleteStaffBtn" class="btn btn-secondary hidden" type="button">🗑 Tanlanganlarni o‘chirish (0)</button>
               <button id="exportStaffBtn" class="btn btn-secondary" type="button" data-i18n="exportExcel">⬇ Excel</button>
               <button id="importStaffBtn" class="btn btn-secondary hidden" type="button" data-i18n="importExcel">⬆ Excel yuklash</button>
               <button id="addStaffBtn" class="btn btn-primary" type="button" data-i18n="addStaff">+ Xodim qo‘shish</button>
@@ -104,7 +105,7 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th data-i18n="colNo">№</th><th data-i18n="colDistrict">Tuman</th><th data-i18n="colInstitution">Muassasa</th><th data-i18n="colFullName">F.I.O.</th><th data-i18n="colPinfl">PINFL</th><th data-i18n="colPosition">Lavozim</th><th data-i18n="colSpecialty">Mutaxassislik</th><th data-i18n="colEmployment">Stavkasi (o‘rindosh, asosiy)</th><th data-i18n="colPhone">Telefon</th><th data-i18n="colActions">Amallar</th></tr></thead>
+              <thead><tr><th><input id="selectAllStaff" type="checkbox" aria-label="Barchasini belgilash / Выбрать все" title="Barchasini belgilash / Выбрать все"></th><th data-i18n="colNo">№</th><th data-i18n="colDistrict">Tuman</th><th data-i18n="colInstitution">Muassasa</th><th data-i18n="colFullName">F.I.O.</th><th data-i18n="colPinfl">PINFL</th><th data-i18n="colPosition">Lavozim</th><th data-i18n="colSpecialty">Mutaxassislik</th><th data-i18n="colEmployment">Stavkasi (o‘rindosh, asosiy)</th><th data-i18n="colPhone">Telefon</th><th data-i18n="colActions">Amallar</th></tr></thead>
               <tbody id="staffBody"></tbody>
             </table>
           </div>
