@@ -61,7 +61,7 @@ async function init(){
       institution TEXT NOT NULL,
       type TEXT NOT NULL,
       full_name TEXT NOT NULL,
-      pinfl VARCHAR(14) UNIQUE NOT NULL,
+      pinfl VARCHAR(14) NOT NULL,
       position TEXT NOT NULL,
       specialty TEXT DEFAULT '',
       employment TEXT DEFAULT 'asosiy',
@@ -71,6 +71,7 @@ async function init(){
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );
     ALTER TABLE institutions ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE staff DROP CONSTRAINT IF EXISTS staff_pinfl_key;
     ALTER TABLE staff ALTER COLUMN employment SET DEFAULT 'asosiy';
     UPDATE staff SET employment='asosiy' WHERE lower(trim(coalesce(employment,''))) IN ('','1','1.0','asosiy','асосий');
     UPDATE staff SET employment='orindosh' WHERE lower(trim(coalesce(employment,''))) IN ('0.5','0,5','0.25','0,25','orindosh','o''rindosh','ўриндош','уриндош');
@@ -103,10 +104,7 @@ async function validateImportRows(rows){
     if(!checked.ok){errors.push({...row,message:importValidationMessage(checked.error)});continue;}
     valid.push({...row,...checked.value});
   }
-  if(!valid.length)return {valid,errors};
-  const pinfls=valid.map(x=>x.pinfl);
-  const existing=new Set((await pool.query('SELECT pinfl FROM staff WHERE pinfl = ANY($1::text[])',[pinfls])).rows.map(x=>x.pinfl));
-  return {valid:valid.filter(row=>{if(existing.has(row.pinfl)){errors.push({...row,message:'PINFL bazada avval mavjud'});return false;}return true;}),errors};
+  return {valid,errors};
 }
 
 const RU_HEADERS=['№','Район','Наименование учреждения','Тип','Ф.И.О. сотрудника','ПИНФЛ','Должность','Специальность','Ставка (совместитель, основной)','Номер телефона','Примечание'];
@@ -163,12 +161,12 @@ app.post('/api/institutions/:id/account',auth,admin,asyncHandler(async(req,res)=
 app.get('/api/staff',auth,asyncHandler(async(req,res)=>{if(req.user.role==='institution')return res.json((await pool.query('SELECT * FROM staff WHERE institution_id=$1 ORDER BY created_at DESC',[req.user.institutionId])).rows);const scope=positiveInt(req.query.institutionId);if(scope)return res.json((await pool.query('SELECT * FROM staff WHERE institution_id=$1 ORDER BY created_at DESC',[scope])).rows);res.json((await pool.query('SELECT * FROM staff ORDER BY created_at DESC')).rows);}));
 app.post('/api/staff',auth,asyncHandler(async(req,res)=>{
   const institutionId=req.user.role==='admin'?positiveInt(req.body?.institutionId):positiveInt(req.user.institutionId);const checked=validateStaffInput({...req.body,institutionId},{requireInstitution:true});if(!checked.ok)return validationError(res,checked);const v=checked.value,ins=await getInstitution(v.institutionId);if(!ins)return res.status(404).json({error:'institution_not_found',field:'institutionId'});
-  try{const r=await pool.query(`INSERT INTO staff(institution_id,district,institution,type,full_name,pinfl,position,specialty,employment,phone,note) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,[ins.id,ins.district,ins.name,ins.type,v.fullName,v.pinfl,v.position,v.specialty,v.employment,v.phone,v.note]);res.status(201).json(r.rows[0]);}catch(e){if(e.code==='23505')return res.status(409).json({error:'duplicate_pinfl',field:'pinfl'});throw e;}
+  const r=await pool.query(`INSERT INTO staff(institution_id,district,institution,type,full_name,pinfl,position,specialty,employment,phone,note) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,[ins.id,ins.district,ins.name,ins.type,v.fullName,v.pinfl,v.position,v.specialty,v.employment,v.phone,v.note]);res.status(201).json(r.rows[0]);
 }));
 app.put('/api/staff/:id',auth,asyncHandler(async(req,res)=>{
   const id=positiveInt(req.params.id);if(!id)return res.status(400).json({error:'invalid_id'});const institutionId=req.user.role==='admin'?positiveInt(req.body?.institutionId):positiveInt(req.user.institutionId);const checked=validateStaffInput({...req.body,institutionId},{requireInstitution:true});if(!checked.ok)return validationError(res,checked);const v=checked.value,ins=await getInstitution(v.institutionId);if(!ins)return res.status(404).json({error:'institution_not_found',field:'institutionId'});
   const params=[ins.id,ins.district,ins.name,ins.type,v.fullName,v.pinfl,v.position,v.specialty,v.employment,v.phone,v.note,new Date(),id];let sql=`UPDATE staff SET institution_id=$1,district=$2,institution=$3,type=$4,full_name=$5,pinfl=$6,position=$7,specialty=$8,employment=$9,phone=$10,note=$11,updated_at=$12 WHERE id=$13`;if(req.user.role==='institution'){sql+=' AND institution_id=$14';params.push(req.user.institutionId);}sql+=' RETURNING *';
-  try{const r=await pool.query(sql,params);if(!r.rowCount)return res.status(404).json({error:'not_found'});res.json(r.rows[0]);}catch(e){if(e.code==='23505')return res.status(409).json({error:'duplicate_pinfl',field:'pinfl'});throw e;}
+  const r=await pool.query(sql,params);if(!r.rowCount)return res.status(404).json({error:'not_found'});res.json(r.rows[0]);
 }));
 app.delete('/api/staff/:id',auth,asyncHandler(async(req,res)=>{const id=positiveInt(req.params.id);if(!id)return res.status(400).json({error:'invalid_id'});const r=req.user.role==='admin'?await pool.query('DELETE FROM staff WHERE id=$1',[id]):await pool.query('DELETE FROM staff WHERE id=$1 AND institution_id=$2',[id,req.user.institutionId]);if(!r.rowCount)return res.status(404).json({error:'not_found'});res.json({ok:true});}));
 app.post('/api/submit',auth,institution,asyncHandler(async(req,res)=>{await pool.query(`UPDATE institutions SET status='done' WHERE id=$1`,[req.user.institutionId]);res.json({ok:true});}));
@@ -185,7 +183,7 @@ app.post('/api/import/preview',auth,institution,asyncHandler(async(req,res)=>{tr
 app.post('/api/import/staff',auth,institution,asyncHandler(async(req,res)=>{
   let rows;try{rows=workbookRowsFromPayload(req.body);}catch(e){if(['too_many_rows','excel_invalid'].includes(e.message))return res.status(400).json({error:e.message});throw e;}
   const checked=await validateImportRows(rows),ins=await getInstitution(req.user.institutionId);if(!ins)return res.status(404).json({error:'institution_not_found'});const client=await pool.connect();let inserted=0;const errors=[...checked.errors];
-  try{await client.query('BEGIN');for(const x of checked.valid){const r=await client.query(`INSERT INTO staff(institution_id,district,institution,type,full_name,pinfl,position,specialty,employment,phone,note) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(pinfl) DO NOTHING RETURNING id`,[ins.id,ins.district,ins.name,ins.type,x.fullName,x.pinfl,x.position,x.specialty,x.employment,x.phone,x.note]);if(r.rowCount)inserted++;else errors.push({...x,message:'PINFL bazada avval mavjud'});}await client.query('COMMIT');res.json({inserted,errorCount:errors.length,errors:errors.slice(0,200)});}catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
+  try{await client.query('BEGIN');for(const x of checked.valid){await client.query(`INSERT INTO staff(institution_id,district,institution,type,full_name,pinfl,position,specialty,employment,phone,note) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,[ins.id,ins.district,ins.name,ins.type,x.fullName,x.pinfl,x.position,x.specialty,x.employment,x.phone,x.note]);inserted++;}await client.query('COMMIT');res.json({inserted,errorCount:errors.length,errors:errors.slice(0,200)});}catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
 }));
 app.get('/api/export/staff.xlsx',auth,asyncHandler(async(req,res)=>{
   const scope=staffExportScope(req.user,req.query.institutionId),lang=req.query.lang==='ru'?'ru':'uz';let rows;
