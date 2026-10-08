@@ -36,7 +36,7 @@ test('rejects rows whose PINFL is not exactly 14 digits', () => {
 test('accepts duplicate PINFL values inside uploaded rows', () => {
   const result = normalizeStaffRows([
     {'Ходимнинг Ф.И.О.':'Test One','ПИНФЛ':validPinfl,'Лавозими':'Shifokor','Ставкаси (ўриндош, асосий)':'асосий'},
-    {'Ходимнинг Ф.И.O.':'Test Two','ПИНФЛ':validPinfl,'Лавозими':'Shifokor','Ставкаси (ўриндош, асосий)':'ўриндош'}
+    {'Ходимнинг Ф.И.О.':'Test Two','ПИНФЛ':validPinfl,'Лавозими':'Shifokor','Ставкаси (ўриндош, асосий)':'ўриндош'}
   ]);
   assert.equal(result.valid.length, 2);
   assert.equal(result.errors.length, 0);
