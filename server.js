@@ -106,6 +106,13 @@ async function validateImportRows(rows){
   }
   return {valid,errors};
 }
+function forcedImportRow(row){
+  const originalPinfl=String(row.pinflRaw||row.pinfl||'').trim();
+  const safePinfl=String(row.pinfl||'').replace(/\D/g,'').slice(0,14);
+  const warning=`Excel xatosi: ${row.message||'Ma’lumot formati noto‘g‘ri'}${originalPinfl&&originalPinfl!==safePinfl?`; asl PINFL: ${originalPinfl}`:''}`;
+  const note=[String(row.note||'').trim(),warning].filter(Boolean).join(' | ').slice(0,500);
+  return {fullName:String(row.fullName||'').trim().slice(0,160),pinfl:safePinfl,position:String(row.position||'').trim().slice(0,120),specialty:String(row.specialty||'').trim().slice(0,120),employment:row.employment||'asosiy',phone:String(row.phone||'').trim().slice(0,32),note};
+}
 
 const RU_HEADERS=['№','Район','Наименование учреждения','Тип','Ф.И.О. сотрудника','ПИНФЛ','Должность','Специальность','Ставка (совместитель, основной)','Номер телефона','Примечание'];
 function exportHeaders(lang){return lang==='ru'?RU_HEADERS:TEMPLATE_HEADERS;}
@@ -182,8 +189,9 @@ app.get('/api/import/template.xlsx',auth,institution,(req,res)=>{
 app.post('/api/import/preview',auth,institution,asyncHandler(async(req,res)=>{try{const rows=workbookRowsFromPayload(req.body),checked=await validateImportRows(rows);res.json({total:checked.valid.length+checked.errors.length,validCount:checked.valid.length,errorCount:checked.errors.length,preview:checked.valid.slice(0,20),errors:checked.errors.slice(0,200)});}catch(e){if(['too_many_rows','excel_invalid'].includes(e.message))return res.status(400).json({error:e.message});throw e;}}));
 app.post('/api/import/staff',auth,institution,asyncHandler(async(req,res)=>{
   let rows;try{rows=workbookRowsFromPayload(req.body);}catch(e){if(['too_many_rows','excel_invalid'].includes(e.message))return res.status(400).json({error:e.message});throw e;}
-  const checked=await validateImportRows(rows),ins=await getInstitution(req.user.institutionId);if(!ins)return res.status(404).json({error:'institution_not_found'});const client=await pool.connect();let inserted=0;const errors=[...checked.errors];
-  try{await client.query('BEGIN');for(const x of checked.valid){await client.query(`INSERT INTO staff(institution_id,district,institution,type,full_name,pinfl,position,specialty,employment,phone,note) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,[ins.id,ins.district,ins.name,ins.type,x.fullName,x.pinfl,x.position,x.specialty,x.employment,x.phone,x.note]);inserted++;}await client.query('COMMIT');res.json({inserted,errorCount:errors.length,errors:errors.slice(0,200)});}catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
+  const checked=await validateImportRows(rows),allowErrors=req.body?.allowErrors===true,ins=await getInstitution(req.user.institutionId);if(!ins)return res.status(404).json({error:'institution_not_found'});const client=await pool.connect();let inserted=0,forcedCount=0;const errors=allowErrors?[]:[...checked.errors];
+  const insertOne=async x=>{await client.query(`INSERT INTO staff(institution_id,district,institution,type,full_name,pinfl,position,specialty,employment,phone,note) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,[ins.id,ins.district,ins.name,ins.type,x.fullName,x.pinfl,x.position,x.specialty,x.employment,x.phone,x.note]);inserted++;};
+  try{await client.query('BEGIN');for(const x of checked.valid)await insertOne(x);if(allowErrors){for(const x of checked.errors){await insertOne(forcedImportRow(x));forcedCount++;}}await client.query('COMMIT');res.json({inserted,forcedCount,errorCount:errors.length,errors:errors.slice(0,200)});}catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
 }));
 app.get('/api/export/staff.xlsx',auth,asyncHandler(async(req,res)=>{
   const scope=staffExportScope(req.user,req.query.institutionId),lang=req.query.lang==='ru'?'ru':'uz';let rows;
