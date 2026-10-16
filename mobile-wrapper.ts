@@ -81,7 +81,7 @@ Bun.serve = function mobileCompatibleServe(options: any) {
 };
 
 // The base application seeds username "admin" from ADMIN_DEFAULT_PASSWORD.
-// Synchronize that persistent row once whenever the desired password changes.
+// Synchronize that persistent row whenever the desired password changes.
 const adminUser = 'admin';
 const adminPass = Bun.env.ADMIN_DEFAULT_PASSWORD || Bun.env.ADMIN_PASSWORD || '';
 const databaseUrl = Bun.env.DATABASE_URL || '';
@@ -96,7 +96,7 @@ if (databaseUrl && adminPass) {
       key text PRIMARY KEY,
       applied_at timestamptz NOT NULL DEFAULT now()
     )`;
-    adminSyncKey = 'admin-default-password-sync-v2:' + createHash('sha256')
+    adminSyncKey = 'admin-default-password-sync-v3:' + createHash('sha256')
       .update(adminUser + '\u0000' + adminPass)
       .digest('hex')
       .slice(0, 24);
@@ -119,7 +119,7 @@ if (adminSyncDb) {
   try {
     if (adminNeedsReseed && adminSyncKey) {
       await adminSyncDb`INSERT INTO app_runtime_migrations (key) VALUES (${adminSyncKey}) ON CONFLICT (key) DO NOTHING`;
-      console.log('ADMIN_CREDENTIALS_SYNCED_V2');
+      console.log('ADMIN_CREDENTIALS_SYNCED_V3');
     }
   } catch (e) {
     console.error('ADMIN_SYNC_FINALIZE_FAILED', e instanceof Error ? e.message : String(e));
