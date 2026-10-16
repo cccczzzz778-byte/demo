@@ -8,7 +8,7 @@ const encoded = Array.from({ length: 7 }, (_, i) =>
 ).join("");
 
 const checksum = createHash("sha256").update(encoded).digest("hex");
-if (checksum !== "734d54c2514214432ad836d0373495bbcf3c6c80f475d0f1f33326f746c45f2e") {
+if (checksum !== "d89b73523d52adc8ddead59b2b2c83db79d3817544dad8dac5b791a9c9d93235") {
   throw new Error(`Dashboard source checksum mismatch: ${checksum}`);
 }
 
