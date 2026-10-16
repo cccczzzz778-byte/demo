@@ -1,0 +1,13 @@
+{
+  "name": "buxoro-ssb-dashboard",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.2.23",
+  "scripts": {
+    "start": "bun index.ts"
+  },
+  "dependencies": {
+    "postgres": "^3.4.7"
+  }
+}
