@@ -14,7 +14,7 @@ function publicOriginFor(request: Request) {
   return `${proto}://${host}`;
 }
 
-function normalizeProxyRequest(request: Request) {
+async function normalizeProxyRequest(request: Request) {
   if (!unsafeMethods.has(request.method)) return request;
 
   const url = new URL(request.url);
@@ -23,6 +23,8 @@ function normalizeProxyRequest(request: Request) {
   const expected = publicOriginFor(request);
   const headers = new Headers(request.headers);
   let headersChanged = false;
+  let bodyChanged = false;
+  let replacementBody: string | null = null;
 
   if (fetchSite === 'same-origin') {
     if (!origin || origin === 'null' || origin !== expected) {
@@ -40,14 +42,29 @@ function normalizeProxyRequest(request: Request) {
     } catch {}
   }
 
+  // The base app keeps the ADMIN username as lowercase "admin".
+  // Accept the requested user-facing "Admin" spelling without weakening auth.
+  if (url.pathname === '/api/auth/login' && request.method === 'POST' && (headers.get('content-type') || '').toLowerCase().includes('application/json')) {
+    try {
+      const raw = await request.clone().text();
+      const data = JSON.parse(raw || '{}');
+      if (typeof data.username === 'string' && data.username.toLowerCase() === 'admin' && data.username !== 'admin') {
+        data.username = 'admin';
+        replacementBody = JSON.stringify(data);
+        headers.delete('content-length');
+        bodyChanged = true;
+      }
+    } catch {}
+  }
+
   const urlChanged = url.origin !== expected;
-  if (!headersChanged && !urlChanged) return request;
+  if (!headersChanged && !urlChanged && !bodyChanged) return request;
 
   const canonicalUrl = `${expected}${url.pathname}${url.search}`;
   return new Request(urlChanged ? canonicalUrl : request.url, {
     method: request.method,
     headers,
-    body: request.body,
+    body: bodyChanged ? replacementBody : request.body,
     redirect: request.redirect,
     signal: request.signal,
     duplex: 'half' as any,
@@ -59,28 +76,27 @@ Bun.serve = function mobileCompatibleServe(options: any) {
   const innerFetch = options.fetch;
   return realServe({
     ...options,
-    fetch: (request: Request, server: any) => innerFetch(normalizeProxyRequest(request), server),
+    fetch: async (request: Request, server: any) => innerFetch(await normalizeProxyRequest(request), server),
   });
 };
 
-// Keep the persistent ADMIN row synchronized with Railway ADMIN_* variables.
-// The base application only seeds ADMIN when the row is absent, so changing env
-// variables alone would otherwise leave the old password hash in PostgreSQL.
-const adminUser = (Bun.env.ADMIN_USERNAME || '').trim();
-const adminPass = Bun.env.ADMIN_PASSWORD || '';
+// The base application seeds username "admin" from ADMIN_DEFAULT_PASSWORD.
+// Synchronize that persistent row once whenever the desired password changes.
+const adminUser = 'admin';
+const adminPass = Bun.env.ADMIN_DEFAULT_PASSWORD || Bun.env.ADMIN_PASSWORD || '';
 const databaseUrl = Bun.env.DATABASE_URL || '';
 let adminSyncDb: ReturnType<typeof postgres> | null = null;
 let adminSyncKey = '';
 let adminNeedsReseed = false;
 
-if (databaseUrl && adminUser && adminPass) {
+if (databaseUrl && adminPass) {
   try {
     adminSyncDb = postgres(databaseUrl, { max: 1, idle_timeout: 10 });
     await adminSyncDb`CREATE TABLE IF NOT EXISTS app_runtime_migrations (
       key text PRIMARY KEY,
       applied_at timestamptz NOT NULL DEFAULT now()
     )`;
-    adminSyncKey = 'admin-env-sync:' + createHash('sha256')
+    adminSyncKey = 'admin-default-password-sync-v2:' + createHash('sha256')
       .update(adminUser + '\u0000' + adminPass)
       .digest('hex')
       .slice(0, 24);
@@ -88,15 +104,8 @@ if (databaseUrl && adminUser && adminPass) {
     if (!done.length) {
       const table = await adminSyncDb`SELECT to_regclass('public.app_users')::text AS name`;
       if (table[0]?.name) {
-        try {
-          await adminSyncDb.unsafe(`DELETE FROM app_users WHERE upper(role::text)='ADMIN'`);
-          adminNeedsReseed = true;
-        } catch {
-          try {
-            await adminSyncDb`DELETE FROM app_users WHERE lower(login)=lower(${adminUser})`;
-            adminNeedsReseed = true;
-          } catch {}
-        }
+        await adminSyncDb`DELETE FROM app_users WHERE username='admin' OR upper(role::text)='ADMIN'`;
+        adminNeedsReseed = true;
       }
     }
   } catch (e) {
@@ -110,7 +119,7 @@ if (adminSyncDb) {
   try {
     if (adminNeedsReseed && adminSyncKey) {
       await adminSyncDb`INSERT INTO app_runtime_migrations (key) VALUES (${adminSyncKey}) ON CONFLICT (key) DO NOTHING`;
-      console.log('ADMIN_CREDENTIALS_SYNCED');
+      console.log('ADMIN_CREDENTIALS_SYNCED_V2');
     }
   } catch (e) {
     console.error('ADMIN_SYNC_FINALIZE_FAILED', e instanceof Error ? e.message : String(e));
