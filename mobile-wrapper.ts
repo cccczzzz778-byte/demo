@@ -11,6 +11,7 @@ function publicOriginFor(request: Request) {
 }
 
 function normalizeSameOriginRequest(request: Request) {
+  const url = new URL(request.url);
   const fetchSite = request.headers.get('sec-fetch-site');
   const origin = request.headers.get('origin');
   const expected = publicOriginFor(request);
@@ -24,6 +25,19 @@ function normalizeSameOriginRequest(request: Request) {
       const target = new URL(expected);
       shouldNormalize = actual.hostname === target.hostname && actual.port === target.port && actual.origin !== target.origin;
     } catch {}
+  }
+
+  if (url.pathname === '/api/auth/login' && request.method === 'POST') {
+    console.log('MOBILE_ORIGIN_TRACE', JSON.stringify({
+      urlOrigin: url.origin,
+      host: request.headers.get('host'),
+      forwardedHost: request.headers.get('x-forwarded-host'),
+      forwardedProto: request.headers.get('x-forwarded-proto'),
+      fetchSite,
+      origin,
+      expected,
+      shouldNormalize
+    }));
   }
 
   if (!shouldNormalize) return request;
