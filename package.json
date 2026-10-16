@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "bun@1.2.23",
   "scripts": {
-    "start": "bun index.ts"
+    "start": "bun wrapper.ts"
   },
   "dependencies": {
     "postgres": "^3.4.7"
