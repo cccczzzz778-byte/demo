@@ -1,4 +1,5 @@
 const realServe = Bun.serve.bind(Bun);
+const unsafeMethods = new Set(['POST','PUT','PATCH','DELETE']);
 
 function publicOriginFor(request: Request) {
   const url = new URL(request.url);
@@ -10,40 +11,45 @@ function publicOriginFor(request: Request) {
   return `${proto}://${host}`;
 }
 
-function normalizeSameOriginRequest(request: Request) {
+function normalizeProxyRequest(request: Request) {
+  if (!unsafeMethods.has(request.method)) return request;
+
   const url = new URL(request.url);
   const fetchSite = request.headers.get('sec-fetch-site');
   const origin = request.headers.get('origin');
   const expected = publicOriginFor(request);
-  let shouldNormalize = false;
+  const headers = new Headers(request.headers);
+  let headersChanged = false;
 
   if (fetchSite === 'same-origin') {
-    shouldNormalize = !origin || origin === 'null' || origin !== expected;
+    if (!origin || origin === 'null' || origin !== expected) {
+      headers.set('origin', expected);
+      headersChanged = true;
+    }
   } else if (origin && origin !== 'null') {
     try {
       const actual = new URL(origin);
       const target = new URL(expected);
-      shouldNormalize = actual.hostname === target.hostname && actual.port === target.port && actual.origin !== target.origin;
+      if (actual.hostname === target.hostname && actual.port === target.port && actual.origin !== target.origin) {
+        headers.set('origin', expected);
+        headersChanged = true;
+      }
     } catch {}
   }
 
-  if (url.pathname === '/api/auth/login' && request.method === 'POST') {
-    console.log('MOBILE_ORIGIN_TRACE', JSON.stringify({
-      urlOrigin: url.origin,
-      host: request.headers.get('host'),
-      forwardedHost: request.headers.get('x-forwarded-host'),
-      forwardedProto: request.headers.get('x-forwarded-proto'),
-      fetchSite,
-      origin,
-      expected,
-      shouldNormalize
-    }));
-  }
+  const urlChanged = url.origin !== expected;
+  if (!headersChanged && !urlChanged) return request;
 
-  if (!shouldNormalize) return request;
-  const headers = new Headers(request.headers);
-  headers.set('origin', expected);
-  return new Request(request, { headers });
+  const canonicalUrl = `${expected}${url.pathname}${url.search}`;
+  return new Request(urlChanged ? canonicalUrl : request.url, {
+    method: request.method,
+    headers,
+    body: request.body,
+    redirect: request.redirect,
+    signal: request.signal,
+    // Bun accepts streamed request bodies with duplex=half.
+    duplex: 'half' as any,
+  } as any);
 }
 
 Bun.serve = function mobileCompatibleServe(options: any) {
@@ -51,7 +57,7 @@ Bun.serve = function mobileCompatibleServe(options: any) {
   const innerFetch = options.fetch;
   return realServe({
     ...options,
-    fetch: (request: Request, server: any) => innerFetch(normalizeSameOriginRequest(request), server),
+    fetch: (request: Request, server: any) => innerFetch(normalizeProxyRequest(request), server),
   });
 };
 
