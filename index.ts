@@ -12,7 +12,7 @@ if (checksum !== "d89b73523d52adc8ddead59b2b2c83db79d3817544dad8dac5b791a9c9d932
   throw new Error(`Dashboard source checksum mismatch: ${checksum}`);
 }
 
-const adminApiScript = `<script>
+const earlyApiScript = `<script>
 async function api(path, options={}) {
   const init = { credentials: "same-origin", ...options };
   init.headers = { ...(options.body ? {"content-type":"application/json"} : {}), ...(options.headers || {}) };
@@ -25,6 +25,7 @@ async function api(path, options={}) {
 }
 </script>`;
 
+const shellPaths = new Set(["/admin", "/leadership", "/region", "/facility"]);
 const BunProxy = Object.create(Bun);
 BunProxy.serve = function(options) {
   if (!options || typeof options.fetch !== "function") return Bun.serve(options);
@@ -36,11 +37,9 @@ BunProxy.serve = function(options) {
       try {
         const url = new URL(request.url);
         const contentType = response.headers.get("content-type") || "";
-        if (url.pathname !== "/admin" || !contentType.includes("text/html")) return response;
+        if (!shellPaths.has(url.pathname) || !contentType.includes("text/html")) return response;
         const html = await response.text();
-        const patched = html.includes("async function api(")
-          ? html
-          : html.replace("</head>", adminApiScript + "</head>");
+        const patched = html.replace("</head>", earlyApiScript + "</head>");
         const headers = new Headers(response.headers);
         headers.delete("content-length");
         return new Response(patched, {
