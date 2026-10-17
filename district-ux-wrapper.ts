@@ -3,6 +3,7 @@ import { patchMapPrerequisites } from './map-prerequisites-patch.ts';
 import { patchLeadershipRuntimeFix } from './leadership-3d-runtime-fix.ts';
 import { patch3dPerformanceAndFacilityFocus } from './leadership-performance-patch.ts';
 import { patchMapModesTv } from './leadership-map-modes-patch.ts';
+import { patchDpmCityMap } from './dpm-city-map-patch.ts';
 import { patchTtbKtmpCenter } from './ttb-ktmp-center-patch.ts';
 import { patchFreeMapCamera } from './leadership-free-camera-patch.ts';
 
@@ -25,7 +26,8 @@ Bun.serve = function districtUxServe(options: any) {
           const patched = patch3dPerformanceAndFacilityFocus(redesigned);
           const modeHtml = patchMapModesTv(patched);
           const centeredHtml = patchTtbKtmpCenter(modeHtml);
-          const finalHtml = patchFreeMapCamera(centeredHtml);
+          const freeHtml = patchFreeMapCamera(centeredHtml);
+          const finalHtml = patchDpmCityMap(freeHtml);
           const headers = new Headers(response.headers);
           headers.delete('content-length');
           headers.set('cache-control', 'no-store');
