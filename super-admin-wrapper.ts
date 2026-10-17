@@ -6,6 +6,7 @@ import { createSessionHash, ensureMonitorSchema, getRuntimeMetrics, isSessionRev
 import { LegacyAdminContract, normalizeLegacyActor } from './legacy-admin-contract.ts';
 import { renderAdminShell } from './super-admin-ui.ts';
 import { enhanceAdminShell } from './super-admin-ui-actions.ts';
+import { patchSuperAdminModernUi } from './super-admin-modern-patch.ts';
 import { handleAdminAccountManagement } from './admin-account-management.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
@@ -101,7 +102,7 @@ async function maybeReplaceAdminPage(request:Request,response:Response,innerFetc
   const profile=await resolveProfileForRequest(request,innerFetch);if(!profile||!['SUPER_ADMIN','ADMIN','CONTROL_ADMIN'].includes(profile.role))return response;
   const original=await response.text();const nonce=cspNonce(response.headers,original);if(!nonce)return new Response('Security nonce unavailable',{status:500});
   const headers=new Headers(response.headers);headers.delete('content-length');headers.set('cache-control','no-store');
-  const shell=enhanceAdminShell(renderAdminShell(profile),profile);
+  const shell=patchSuperAdminModernUi(enhanceAdminShell(renderAdminShell(profile),profile));
   return new Response(shell.replaceAll('__CSP_NONCE__',nonce),{status:response.status,statusText:response.statusText,headers});
 }
 
@@ -120,7 +121,7 @@ Bun.serve = function superAdminServe(options: any) {
           if (!db) response=new Response(JSON.stringify({ error: 'Database unavailable' }), { status: 503, headers: { 'content-type': 'application/json' } });
           else response=(await handleAdminAccountManagement(request,innerFetch,adminMgmtDeps)) || (await handleAdminApi(request, innerFetch, deps)) || new Response(JSON.stringify({error:'Not found'}),{status:404});
         } else if (isDirectLegacyUserManagement(pathname)) {
-          response=new Response(JSON.stringify({ error: 'Use scoped control API' }), { status: 403, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+          response=new Response(JSON.stringify({ error: 'Use scoped control API' }), { status: 403, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control':'no-store' } });
         } else {
           response=await innerFetch(request, server);
           response=await maybeReplaceAdminPage(request,response,innerFetch);
