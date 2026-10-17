@@ -5,13 +5,9 @@
   "main": "server-wrapper.js",
   "scripts": {
     "start": "node --no-warnings normalize-hudud.js && node --no-warnings server-wrapper.js",
-    "test": "node --test normalize-hudud.test.js",
-    "check": "node --check normalize-hudud.js && node --test normalize-hudud.test.js && node --check server-wrapper.js && node --check server.js && node --check public/login.js && node --check public/panel.js && node --check public/excel-panel.js && node --check public/excel-dashboard.js"
+    "test": "node --test normalize-hudud.test.js test/graduate-utils.test.js",
+    "check": "node --check normalize-hudud.js && node --check server-wrapper.js && node --check server.js && node --check public/login.js && node --check public/panel.js && node --check public/excel-panel.js && node --check public/excel-dashboard.js && node --check public/admin-extra.js && node --check public/dashboard-metrics.js && node --check lib/graduate-utils.js && npm test"
   },
-  "engines": {
-    "node": ">=22.13"
-  },
-  "dependencies": {
-    "express": "5.1.0"
-  }
+  "engines": {"node": ">=22.13"},
+  "dependencies": {"express": "5.1.0"}
 }
