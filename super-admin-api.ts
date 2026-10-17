@@ -42,6 +42,7 @@ function expectedLegacyRole(type:string) { if (type === 'TTB' || type === 'SHTB'
 function visible(profile: AccessProfile, scope: ResourceScope) { return authorize(profile,'VIEW',scope).allowed; }
 async function institutions(request: Request, innerFetch: InnerFetch): Promise<LegacyInstitution[]> { const r = await innerJson(innerFetch, request, '/api/v1/institutions'); if (!r.response.ok) return []; return Array.isArray(r.data?.institutions) ? r.data.institutions : []; }
 async function users(request: Request, innerFetch: InnerFetch): Promise<LegacyUser[]> { const r = await innerJson(innerFetch, request, LegacyAdminContract.listUsers); if (!r.response.ok) return []; return Array.isArray(r.data?.users) ? r.data.users : []; }
+function facilityUsers(all: LegacyUser[]) { return all.filter(u=>u.role !== 'ADMIN'); }
 function adminProfileFromBody(body:any): AccessProfile | null {
   const role = String(body?.role || ''); if (role !== 'ADMIN' && role !== 'CONTROL_ADMIN') return null;
   const scopeType = String(body?.scopeType || '') as AccessProfile['scopeType'];
@@ -57,7 +58,7 @@ export async function handleAdminApi(request: Request, innerFetch: InnerFetch, d
   if (url.pathname === '/api/control/me' && method === 'GET') return j({actor,profile:safeProfileSettings(profile)});
 
   if (url.pathname === '/api/control/summary' && method === 'GET') {
-    const scoped=scopeInstitutions(await institutions(request,innerFetch),profile); const us=(await users(request,innerFetch)).filter(u=>visible(profile,scopeOfUser(u)));
+    const scoped=scopeInstitutions(await institutions(request,innerFetch),profile); const us=facilityUsers(await users(request,innerFetch)).filter(u=>visible(profile,scopeOfUser(u)));
     const counts:Record<string,number>={};for(const i of scoped)counts[i.type]=(counts[i.type]||0)+1;
     return j({institutions:scoped.length,users:us.length,activeUsers:us.filter(x=>x.active).length,dpms:scoped.filter(x=>x.type==='DPM').length,counts});
   }
@@ -89,7 +90,7 @@ export async function handleAdminApi(request: Request, innerFetch: InnerFetch, d
   }
   if (url.pathname === '/api/control/hierarchy' && method === 'GET') return j({hierarchy:buildHierarchy(await institutions(request,innerFetch),profile)});
   if (url.pathname === '/api/control/users' && method === 'GET') {
-    const scoped=(await users(request,innerFetch)).filter(u=>visible(profile,scopeOfUser(u))); const q=(url.searchParams.get('q')||'').trim().toLowerCase();
+    const scoped=facilityUsers(await users(request,innerFetch)).filter(u=>visible(profile,scopeOfUser(u))); const q=(url.searchParams.get('q')||'').trim().toLowerCase();
     return j({users:q?scoped.filter(x=>(x.username+' '+(x.institution_name||'')+' '+(x.scope||'')).toLowerCase().includes(q)):scoped});
   }
 
@@ -108,8 +109,12 @@ export async function handleAdminApi(request: Request, innerFetch: InnerFetch, d
     let body:any={};try{body=await request.json()}catch{return j({error:'Invalid JSON'},400)}
     const all=await institutions(request,innerFetch);const target=all.find(x=>x.id===String(body?.institutionId||''));if(!target)return j({error:'Muassasa topilmadi'},404);
     const parentId=body?.parentId==null?null:String(body.parentId);const parent=parentId?all.find(x=>x.id===parentId):null;if(parentId&&!parent)return j({error:'Parent topilmadi'},404);
-    if(target.type==='DPM'||parent?.type==='DPM') {if(profile.role!=='SUPER_ADMIN')return j({error:'Forbidden'},403)}
-    else {
+    if(target.type==='DPM') {
+      if(profile.role!=='SUPER_ADMIN')return j({error:'Forbidden'},403);
+      if(parentId!==null)return j({error:'DPM viloyat darajasida qoladi'},400);
+    } else {
+      if(parent?.type==='DPM')return j({error:'DPM parent bo‘la olmaydi'},400);
+      if(parent && parent.type!=='TTB' && parent.type!=='SHTB')return j({error:'Parent TTB yoki SHTB bo‘lishi kerak'},400);
       const t=authorize(profile,'MANAGE_HIERARCHY',scopeOfInstitution(target));if(!t.allowed)return j({error:'Forbidden',reason:t.reason},403);
       if(parent&&!authorize(profile,'MANAGE_HIERARCHY',scopeOfInstitution(parent)).allowed)return j({error:'Forbidden'},403);
       if(parent&&parent.scope!==target.scope)return j({error:'Hududlar mos emas'},400);
@@ -128,7 +133,9 @@ export async function handleAdminApi(request: Request, innerFetch: InnerFetch, d
   }
   const m = url.pathname.match(/^\/api\/control\/users\/([^/]+)\/(reset|status)$/);
   if (m && method === 'POST') {
-    const target = (await users(request,innerFetch)).find(u=>u.id===decodeURIComponent(m[1])); if (!target) return j({error:'Foydalanuvchi topilmadi'},404);
+    const allUsers=await users(request,innerFetch);
+    const target = allUsers.find(u=>u.id===decodeURIComponent(m[1])); if (!target) return j({error:'Foydalanuvchi topilmadi'},404);
+    if(target.role==='ADMIN' && profile.role!=='SUPER_ADMIN') return j({error:'Foydalanuvchi topilmadi'},404);
     const action = m[2] === 'reset' ? 'RESET_CREDENTIAL' : 'SET_ACTIVE'; const decision = authorize(profile,action,scopeOfUser(target)); if (!decision.allowed) return j({error:'Forbidden',reason:decision.reason},403);
     const bodyText = await request.text(); const path = m[2] === 'reset' ? LegacyAdminContract.resetUser(target.id) : LegacyAdminContract.setUserActive(target.id);
     const forwarded = await innerJson(innerFetch,request,path,{method:'POST',body:bodyText});
