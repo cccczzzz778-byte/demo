@@ -4,7 +4,7 @@
   "description": "Buxoro viloyati bitiruvchilari — canonical admin va 3D dashboard",
   "main": "canonical-server.js",
   "scripts": {
-    "start": "node --no-warnings canonical-server.js",
+    "start": "npm run check && node --no-warnings canonical-server.js",
     "test": "node --test normalize-hudud.test.js test/*.test.js",
     "check": "node --check canonical-server.js && node --check server.js && node --check public/login.js && node --check public/excel-panel.js && node --check public/dashboard-metrics.js && node --check public/dashboard-summary.js && node --check lib/graduate-utils.js && node --check lib/graduate-model.js && node --check lib/graduate-db.js && node --check lib/import-graduates.js && node --check lib/graduate-service.js && node --check lib/dashboard-summary.js && npm test"
   },
