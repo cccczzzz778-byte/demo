@@ -28,17 +28,19 @@ describe('authorize', () => {
     }
   });
 
-  test('ordinary Admin can manage credentials only inside its one district and never DPM', () => {
+  test('ordinary Admin can manage credentials only inside its one district and cannot access DPM at all', () => {
     expect(authorize(districtAdmin,'CREATE_CREDENTIAL',target("G'ijduvon")).allowed).toBe(true);
     expect(authorize(districtAdmin,'RESET_CREDENTIAL',target("G‘ijduvon tumani")).allowed).toBe(true);
     expect(authorize(districtAdmin,'SET_ACTIVE',target('Jondor')).allowed).toBe(false);
     expect(authorize(districtAdmin,'CREATE_CREDENTIAL',target("G'ijduvon",'DPM')).allowed).toBe(false);
+    expect(authorize(districtAdmin,'VIEW',target("G'ijduvon",'DPM')).allowed).toBe(false);
     expect(authorize(districtAdmin,'ASSIGN_ADMIN',target("G'ijduvon")).allowed).toBe(false);
   });
 
-  test('province active Control Admin manages non-DPM district credentials but not DPM or admin assignment', () => {
+  test('province active Control Admin manages non-DPM district credentials, may monitor DPM, but cannot change DPM credentials or admins', () => {
     expect(authorize(provinceActive,'CREATE_CREDENTIAL',target('Olot')).allowed).toBe(true);
     expect(authorize(provinceActive,'RESET_CREDENTIAL',target('Buxoro shahri')).allowed).toBe(true);
+    expect(authorize(provinceActive,'VIEW',target(null,'DPM')).allowed).toBe(true);
     expect(authorize(provinceActive,'CREATE_CREDENTIAL',target(null,'DPM')).allowed).toBe(false);
     expect(authorize(provinceActive,'ASSIGN_ADMIN',target('Olot')).allowed).toBe(false);
   });
@@ -49,10 +51,11 @@ describe('authorize', () => {
     expect(authorize(provinceViewer,'SET_ACTIVE',target('Olot')).allowed).toBe(false);
   });
 
-  test('district Control Admin cannot escape to city alias or another district', () => {
+  test('district Control Admin cannot escape to city alias, another district, or province DPM', () => {
     expect(authorize(districtControl,'CREATE_CREDENTIAL',target('Buxoro tumani')).allowed).toBe(true);
     expect(authorize(districtControl,'CREATE_CREDENTIAL',target('Buxoro shahri')).allowed).toBe(false);
     expect(authorize(districtControl,'CREATE_CREDENTIAL',target('Kogon')).allowed).toBe(false);
+    expect(authorize(districtControl,'VIEW',target('Buxoro','DPM')).allowed).toBe(false);
   });
 
   test('facility user can only view its own facility and cannot manage credentials', () => {
