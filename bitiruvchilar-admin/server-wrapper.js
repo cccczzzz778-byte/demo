@@ -31,7 +31,9 @@ let dashboardHtml = zlib.gunzipSync(Buffer.from(encoded,'base64')).toString('utf
 if(dashboardHtml.length<80000) throw new Error('3D dashboard fayli tekshiruvdan o‘tmadi.');
 const dm=dashboardHtml.match(/<script type="application\/json" id="dash-data">([\s\S]*?)<\/script>/);
 if(dm){try{const old=JSON.parse(dm[1]);old.data=EXCEL_SUMMARY.map(x=>({key:x.key,name:x.name,turi:x.turi,jami:x.jami,oliy:x.oliy,texnikum:x.texnikum,ishda:x.ishda,oz_hududida:x.mapped,ishsiz:x.ishsiz,bosh_shtat:0}));old.meta={rasmiy:true,manba:'Тоифалар битирувчи 9823 (4).xlsx',yangilangan:'2026-10-17'};dashboardHtml=dashboardHtml.replace(dm[0],`<script type="application/json" id="dash-data">${JSON.stringify(old).replace(/</g,'\\u003c')}</script>`);}catch(e){console.error(e)}}
-dashboardHtml=dashboardHtml.replace('</body>','<script src="/excel-dashboard.js"></script></body>');
+const bodyCloseIndex=dashboardHtml.toLowerCase().lastIndexOf('</body>');
+if(bodyCloseIndex<0) throw new Error('Dashboard yakuniy body tegi topilmadi.');
+dashboardHtml=dashboardHtml.slice(0,bodyCloseIndex)+'<script src="/excel-dashboard.js"></script>'+dashboardHtml.slice(bodyCloseIndex);
 const dashboardBuf=Buffer.from(dashboardHtml);
 const db = new DatabaseSync(DB_PATH);
 db.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS excel_graduates(id INTEGER PRIMARY KEY AUTOINCREMENT,fio TEXT NOT NULL,hudud TEXT NOT NULL DEFAULT '',mahalla TEXT NOT NULL DEFAULT '',toifa TEXT NOT NULL DEFAULT '',holat TEXT NOT NULL DEFAULT '',op_oshp TEXT NOT NULL DEFAULT '',imported_at TEXT NOT NULL DEFAULT (datetime('now'))); CREATE INDEX IF NOT EXISTS idx_excel_hudud ON excel_graduates(hudud); CREATE INDEX IF NOT EXISTS idx_excel_op ON excel_graduates(op_oshp); CREATE INDEX IF NOT EXISTS idx_excel_fio ON excel_graduates(fio);`);
