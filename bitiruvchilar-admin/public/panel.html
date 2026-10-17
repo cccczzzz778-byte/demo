@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bitiruvchilar paneli</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@500&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div><h1>Bitiruvchilar paneli · 2026</h1><div class="note">Buxoro viloyati tibbiyot bitiruvchilari</div></div>
+    <div class="who"><span id="who">—</span><span class="chip" id="role">—</span><button class="btn" id="logout" type="button">Chiqish</button></div>
+  </div>
+  <nav class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" data-tab="t-rec" aria-selected="true" type="button">Bitiruvchilar</button>
+    <button class="tab" role="tab" data-tab="t-rep" aria-selected="false" type="button">Hisobot</button>
+    <button class="tab" role="tab" data-tab="t-usr" aria-selected="false" type="button" id="tab-usr" hidden>Foydalanuvchilar</button>
+    <button class="tab" role="tab" data-tab="t-pwd" aria-selected="false" type="button">Parol</button>
+  </nav>
+</header>
+<main class="main">
+  <section class="card" id="must" hidden>
+    <h2>Parolni almashtiring</h2><p class="note">Xavfsizlik uchun birinchi kirishda vaqtinchalik parolni almashtirish shart.</p>
+    <div class="grid"><label class="f">Joriy parol<input type="password" id="m-cur" autocomplete="current-password"></label><label class="f">Yangi parol<input type="password" id="m-new" autocomplete="new-password"></label><label class="f">Yangi parol (takror)<input type="password" id="m-new2" autocomplete="new-password"></label></div>
+    <div class="err" id="m-err" role="alert"></div><div class="row"><button class="btn primary" id="m-save" type="button">Saqlash</button></div>
+  </section>
+  <section id="t-rec" class="pane" hidden>
+    <div class="sum" id="sum"></div>
+    <div class="row"><input type="text" id="q" class="grow" placeholder="FIO, ish joyi, lavozim yoki mutaxassislik boʻyicha qidirish" aria-label="Qidirish"><select id="f-hudud" aria-label="Hudud"></select><select id="f-holat" aria-label="Holat"></select><select id="f-daraja" aria-label="Daraja"></select><button class="btn" id="f-reset" type="button">Tozalash</button></div>
+    <div class="row"><button class="btn primary" id="add" type="button">+ Bitiruvchi qoʻshish</button><button class="btn" id="imp-toggle" type="button">Exceldan import</button><button class="btn" id="exp" type="button">CSV yuklab olish</button><span class="msg" id="rec-msg" role="status"></span></div>
+    <section class="card" id="form" hidden><h2 id="form-title">Yangi bitiruvchi</h2><div class="grid"><label class="f">FIO<input type="text" id="r-fio" autocomplete="off"></label><label class="f">Bitirgan muassasa<input type="text" id="r-muassasa" list="dl-muassasa" autocomplete="off"></label><label class="f">Mutaxassislik<input type="text" id="r-mutaxassislik" list="dl-mut" autocomplete="off"></label><label class="f">Daraja<select id="r-daraja"></select></label><label class="f">Yashash hududi<select id="r-hudud"></select></label><label class="f">Holat<select id="r-holat"></select></label><label class="f">Ish joyi<input type="text" id="r-ish" autocomplete="off"></label><label class="f">Lavozim<input type="text" id="r-lavozim" autocomplete="off"></label><label class="f">Ish joyi hududi<select id="r-ish-hudud"></select></label></div><datalist id="dl-muassasa"></datalist><datalist id="dl-mut"></datalist><div class="err" id="r-err" role="alert"></div><div class="row"><button class="btn primary" id="r-save" type="button">Saqlash</button><button class="btn" id="r-cancel" type="button">Bekor qilish</button><button class="btn danger" id="r-del" type="button" hidden>Oʻchirish</button></div></section>
+    <section class="card" id="imp" hidden><h2>Exceldan import</h2><p class="note">Ustunlar: FIO · Bitirgan muassasa · Mutaxassislik · Daraja · Yashash hududi · Holat · Ish joyi · Lavozim · Ish joyi hududi.</p><textarea id="imp-text" aria-label="Excel qatorlari"></textarea><div class="row"><button class="btn primary" id="imp-go" type="button">Import qilish</button><span class="msg" id="imp-msg" role="status"></span></div><div id="imp-bad" class="note"></div></section>
+    <div class="scroll"><table id="tbl"><thead><tr><th class="num">№</th><th>FIO</th><th>Bitirgan muassasa</th><th>Mutaxassislik</th><th class="hide-sm">Daraja</th><th>Yashash hududi</th><th>Holat</th><th>Ish joyi</th><th class="hide-sm">Lavozim</th><th class="hide-sm">Ish joyi hududi</th></tr></thead><tbody></tbody></table><div class="empty" id="empty" hidden></div></div>
+  </section>
+  <section id="t-rep" class="pane" hidden><section class="card"><h2>Hududlar boʻyicha hisobot</h2><div class="scroll" style="max-height:none"><table id="rep"><thead><tr><th>Hudud</th><th class="num">Jami</th><th class="num">Oliy</th><th class="num">Oʻrta tibbiy</th><th class="num">Ishga joylashgan</th><th class="num">Oʻz hududida</th><th class="num">Ishsiz</th><th class="num">Boʻsh shtat</th></tr></thead><tbody></tbody><tfoot></tfoot></table></div><div class="row"><button class="btn primary" id="rep-copy" type="button">Dashboard uchun nusxalash</button><button class="btn" id="rep-save" type="button" hidden>Boʻsh shtatlarni saqlash</button><span class="msg" id="rep-msg" role="status"></span></div><textarea id="rep-text" readonly hidden aria-label="Nusxalash uchun matn"></textarea></section></section>
+  <section id="t-usr" class="pane" hidden><section class="card"><h2>Yangi foydalanuvchi</h2><div class="grid"><label class="f">Login<input type="text" id="u-login" autocomplete="off"></label><label class="f">FIO<input type="text" id="u-fio" autocomplete="off"></label><label class="f">Vaqtinchalik parol<input type="text" id="u-pass" autocomplete="off"></label><label class="f">Rol<select id="u-role"><option value="operator">Operator</option><option value="admin">Administrator</option></select></label><label class="f">Hudud<select id="u-hudud"></select></label></div><div class="err" id="u-err" role="alert"></div><div class="row"><button class="btn primary" id="u-add" type="button">Qoʻshish</button><span class="msg" id="u-msg" role="status"></span></div></section><div class="scroll"><table id="usr"><thead><tr><th>Login</th><th>FIO</th><th>Rol</th><th>Hudud</th><th>Holat</th><th></th></tr></thead><tbody></tbody></table></div></section>
+  <section id="t-pwd" class="pane" hidden><section class="card"><h2>Parolni almashtirish</h2><div class="grid"><label class="f">Joriy parol<input type="password" id="p-cur" autocomplete="current-password"></label><label class="f">Yangi parol<input type="password" id="p-new" autocomplete="new-password"></label><label class="f">Yangi parol (takror)<input type="password" id="p-new2" autocomplete="new-password"></label></div><div class="err" id="p-err" role="alert"></div><div class="row"><button class="btn primary" id="p-save" type="button">Saqlash</button><span class="msg" id="p-msg" role="status"></span></div></section></section>
+</main>
+<script src="/panel.js"></script>
+</body>
+</html>
