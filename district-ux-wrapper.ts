@@ -2,6 +2,7 @@ import { patchLeadership3d } from './leadership-3d-patch.ts';
 import { patchMapPrerequisites } from './map-prerequisites-patch.ts';
 import { patchLeadershipRuntimeFix } from './leadership-3d-runtime-fix.ts';
 import { patch3dPerformanceAndFacilityFocus } from './leadership-performance-patch.ts';
+import { patchMapModesTv } from './leadership-map-modes-patch.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
@@ -20,10 +21,11 @@ Bun.serve = function districtUxServe(options: any) {
           const prepared = pathname === '/map' ? patchMapPrerequisites(source) : source;
           const redesigned = patchLeadershipRuntimeFix(patchLeadership3d(prepared));
           const patched = patch3dPerformanceAndFacilityFocus(redesigned);
+          const finalHtml = patchMapModesTv(patched);
           const headers = new Headers(response.headers);
           headers.delete('content-length');
           headers.set('cache-control', 'no-store');
-          return new Response(patched, {
+          return new Response(finalHtml, {
             status: response.status,
             statusText: response.statusText,
             headers,
