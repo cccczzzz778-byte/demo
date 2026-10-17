@@ -15,7 +15,12 @@ function migrateGraduateDb(db){
  CREATE TABLE IF NOT EXISTS graduate_audit(
   id INTEGER PRIMARY KEY AUTOINCREMENT,graduate_id INTEGER NOT NULL,actor TEXT NOT NULL DEFAULT '',action TEXT NOT NULL DEFAULT 'update',old_json TEXT NOT NULL DEFAULT '{}',new_json TEXT NOT NULL DEFAULT '{}',created_at TEXT NOT NULL DEFAULT (datetime('now'))
  );
- CREATE INDEX IF NOT EXISTS idx_graduate_audit_gid ON graduate_audit(graduate_id);`);
+ CREATE INDEX IF NOT EXISTS idx_graduate_audit_gid ON graduate_audit(graduate_id);
+ CREATE TABLE IF NOT EXISTS medical_graduates(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,fio TEXT NOT NULL,pinfl TEXT NOT NULL DEFAULT '',hudud TEXT NOT NULL DEFAULT '',mahalla TEXT NOT NULL DEFAULT '',address TEXT NOT NULL DEFAULT '',education_level TEXT NOT NULL DEFAULT '',institution TEXT NOT NULL DEFAULT '',specialty TEXT NOT NULL DEFAULT '',status TEXT NOT NULL DEFAULT '',workplace TEXT NOT NULL DEFAULT '',position TEXT NOT NULL DEFAULT '',phone TEXT NOT NULL DEFAULT '',note TEXT NOT NULL DEFAULT '',created_at TEXT NOT NULL DEFAULT (datetime('now'))
+ );`);
+ const mcols=new Set(db.prepare('PRAGMA table_info(medical_graduates)').all().map(x=>x.name));if(!mcols.has('pinfl'))db.exec("ALTER TABLE medical_graduates ADD COLUMN pinfl TEXT NOT NULL DEFAULT ''");
+ db.exec('CREATE INDEX IF NOT EXISTS idx_medgrad_pinfl ON medical_graduates(pinfl); CREATE INDEX IF NOT EXISTS idx_medgrad_hudud ON medical_graduates(hudud); CREATE INDEX IF NOT EXISTS idx_medgrad_edu ON medical_graduates(education_level);');
 }
 function digits(v){return String(v??'').replace(/\D/g,'')}
 function findGraduateForMerge(db,row={}){
