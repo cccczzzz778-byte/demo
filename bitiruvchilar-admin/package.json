@@ -1,11 +1,11 @@
 {
   "name": "bitiruvchilar-admin",
   "version": "1.0.0",
-  "description": "Buxoro viloyati tibbiyot bitiruvchilari — maʼlumot kiritish paneli",
-  "main": "server.js",
+  "description": "Buxoro viloyati tibbiyot bitiruvchilari — 3D dashboard va maʼlumot kiritish paneli",
+  "main": "server-wrapper.js",
   "scripts": {
-    "start": "node --no-warnings server.js",
-    "check": "node --check server.js && node --check public/login.js && node --check public/panel.js"
+    "start": "node --no-warnings server-wrapper.js",
+    "check": "node --check server-wrapper.js && node --check server.js && node --check public/login.js && node --check public/panel.js"
   },
   "engines": {
     "node": ">=22.13"
