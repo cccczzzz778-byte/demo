@@ -1,0 +1,16 @@
+{
+  "name": "bitiruvchilar-admin",
+  "version": "1.0.0",
+  "description": "Buxoro viloyati tibbiyot bitiruvchilari — maʼlumot kiritish paneli",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --no-warnings server.js",
+    "check": "node --check server.js && node --check public/login.js && node --check public/panel.js"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "express": "5.1.0"
+  }
+}
