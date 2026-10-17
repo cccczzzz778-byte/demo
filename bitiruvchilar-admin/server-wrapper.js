@@ -3,6 +3,7 @@ const http=require('node:http');
 const fs=require('node:fs');
 const path=require('node:path');
 const zlib=require('node:zlib');
+const crypto=require('node:crypto');
 const {spawn}=require('node:child_process');
 const {DatabaseSync}=require('node:sqlite');
 
@@ -40,13 +41,18 @@ const dashboardBuf=Buffer.from(dashboardHtml);
 const panelBuf=fs.readFileSync(path.join(__dirname,'public','excel-panel.html'));
 
 const db=new DatabaseSync(DB_PATH);
-db.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS excel_graduates(
+db.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS seed_upload(idx INTEGER PRIMARY KEY,data TEXT NOT NULL); CREATE TABLE IF NOT EXISTS excel_graduates(
  id INTEGER PRIMARY KEY AUTOINCREMENT,fio TEXT NOT NULL,hudud TEXT NOT NULL DEFAULT '',mahalla TEXT NOT NULL DEFAULT '',toifa TEXT NOT NULL DEFAULT '',holat TEXT NOT NULL DEFAULT '',op_oshp TEXT NOT NULL DEFAULT '',imported_at TEXT NOT NULL DEFAULT (datetime('now'))
 ); CREATE INDEX IF NOT EXISTS idx_excel_hudud ON excel_graduates(hudud); CREATE INDEX IF NOT EXISTS idx_excel_op ON excel_graduates(op_oshp); CREATE INDEX IF NOT EXISTS idx_excel_fio ON excel_graduates(fio); CREATE INDEX IF NOT EXISTS idx_excel_holat ON excel_graduates(holat);`);
 const cols=new Set(db.prepare('PRAGMA table_info(excel_graduates)').all().map(x=>x.name));
 for(const [name,type] of [['tugilgan_sana','TEXT'],['yil','TEXT'],['yosh','TEXT'],['jins','TEXT'],['bitirgan_turi','TEXT'],['telefon','TEXT'],['band_qilish_rejasi','TEXT'],['izoh','TEXT']]){if(!cols.has(name))db.exec(`ALTER TABLE excel_graduates ADD COLUMN ${name} ${type} NOT NULL DEFAULT ''`)}
 
 const clean=(v,n=300)=>String(v??'').replace(/[\u0000-\u001f]/g,' ').replace(/\s+/g,' ').trim().slice(0,n);
+function importRows(rows){
+ const ins=db.prepare(`INSERT INTO excel_graduates(fio,hudud,mahalla,toifa,holat,op_oshp,tugilgan_sana,yil,yosh,jins,bitirgan_turi,telefon,band_qilish_rejasi,izoh) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+ db.exec('BEGIN IMMEDIATE');let ok=0,mapped=0;
+ try{db.exec('DELETE FROM excel_graduates');for(const r of rows){const fio=clean(r.fio,180);if(fio.length<5)continue;const op=clean(r.op_oshp,220);ins.run(fio,clean(r.hudud,120),clean(r.mahalla,180),clean(r.bitiruvchi_turi||r.toifa,140),clean(r.bandlik_holati||r.holat,180),op,clean(r.tugilgan_sana,30),clean(r.yil,10),clean(r.yosh,10),clean(r.jins,30),clean(r.bitirgan_turi,100),clean(r.telefon,60),clean(r.band_qilish_rejasi,180),clean(r.izoh,500));ok++;if(op)mapped++}db.exec('COMMIT');return {ok,mapped}}catch(e){try{db.exec('ROLLBACK')}catch{}throw e}
+}
 function autoSeed(){
  const n=db.prepare('SELECT COUNT(*) n FROM excel_graduates').get().n;
  if(n>0){console.log(`Excel ro‘yxati bazada mavjud: ${n} ta`);return}
@@ -55,11 +61,7 @@ function autoSeed(){
  try{
   const rows=JSON.parse(zlib.gunzipSync(Buffer.from(chunks.join(''),'base64')).toString('utf8'));
   if(!Array.isArray(rows)||rows.length<9700)throw new Error(`seed rows=${rows?.length}`);
-  const ins=db.prepare(`INSERT INTO excel_graduates(fio,hudud,mahalla,toifa,holat,op_oshp,tugilgan_sana,yil,yosh,jins,bitirgan_turi,telefon,band_qilish_rejasi,izoh) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
-  db.exec('BEGIN IMMEDIATE');
-  let ok=0,mapped=0;
-  for(const r of rows){const fio=clean(r.fio,180);if(fio.length<5)continue;const op=clean(r.op_oshp,220);ins.run(fio,clean(r.hudud,120),clean(r.mahalla,180),clean(r.bitiruvchi_turi||r.toifa,140),clean(r.bandlik_holati||r.holat,180),op,clean(r.tugilgan_sana,30),clean(r.yil,10),clean(r.yosh,10),clean(r.jins,30),clean(r.bitirgan_turi,100),clean(r.telefon,60),clean(r.band_qilish_rejasi,180),clean(r.izoh,500));ok++;if(op)mapped++}
-  db.exec('COMMIT');console.log(`Excel avtomatik import: ${ok} ta; OP/OShP aniq: ${mapped}`);
+  const {ok,mapped}=importRows(rows);console.log(`Excel avtomatik import: ${ok} ta; OP/OShP aniq: ${mapped}`);
  }catch(e){try{db.exec('ROLLBACK')}catch{}console.error('Excel auto-seed xatosi:',e)}
 }
 autoSeed();
@@ -77,6 +79,25 @@ function scopedWhere(me){if(me.role==='operator'&&me.hudud){const n=HUDUD_KEY_TO
 const server=http.createServer(async(req,res)=>{let u;try{u=new URL(req.url,'http://localhost')}catch{u=new URL('http://localhost/')};const p=u.pathname;
  if(req.method==='GET'&&(p==='/'||p==='/dashboard'||p==='/dashboard.html'))return serveDashboard(res);
  if(req.method==='GET'&&p==='/panel')return servePanel(res);
+
+ if(req.method==='GET'&&p==='/internal/seed-chunk'){
+  const token=u.searchParams.get('t')||'';if(!process.env.SEED_UPLOAD_TOKEN||token!==process.env.SEED_UPLOAD_TOKEN)return json(res,404,{error:'Not found'});
+  const idx=Number(u.searchParams.get('i')),totalParts=Number(u.searchParams.get('n')),data=u.searchParams.get('d')||'';
+  if(!Number.isInteger(idx)||idx<0||idx>300||!Number.isInteger(totalParts)||totalParts<1||totalParts>300||data.length<1||data.length>7000)return json(res,400,{error:'bad chunk'});
+  db.prepare('INSERT INTO seed_upload(idx,data) VALUES(?,?) ON CONFLICT(idx) DO UPDATE SET data=excluded.data').run(idx,data);
+  const count=db.prepare('SELECT COUNT(*) n FROM seed_upload').get().n;
+  if(count===totalParts){
+   try{
+    const joined=db.prepare('SELECT data FROM seed_upload ORDER BY idx').all().map(x=>x.data).join('');
+    const pad='='.repeat((4-joined.length%4)%4);const enc=Buffer.from(joined+pad,'base64url');const nonce=enc.subarray(0,12),tag=enc.subarray(enc.length-16),cipher=enc.subarray(12,enc.length-16);
+    const key=Buffer.from(process.env.SEED_UPLOAD_KEY||'','base64');if(key.length!==32)throw new Error('bad key');
+    const dec=crypto.createDecipheriv('aes-256-gcm',key,nonce);dec.setAAD(Buffer.from('graduate-seed-upload-v1'));dec.setAuthTag(tag);const gz=Buffer.concat([dec.update(cipher),dec.final()]);
+    const rows=JSON.parse(zlib.gunzipSync(gz).toString('utf8'));if(!Array.isArray(rows)||rows.length!==9823)throw new Error('bad rows '+rows.length);
+    const result=importRows(rows);db.exec('DELETE FROM seed_upload');console.log(`Secure seed import: ${result.ok} ta; mapped ${result.mapped}`);return json(res,200,{done:true,...result});
+   }catch(e){console.error('Secure seed import xatosi',e);return json(res,500,{error:'seed import failed'})}
+  }
+  return json(res,200,{done:false,count,totalParts});
+ }
  if(req.method==='GET'&&p==='/api/public/excel-summary')return json(res,200,liveSummary());
  if(req.method==='GET'&&p==='/api/excel/options'){
   const me=await checkAuth(req);if(!me)return json(res,401,{error:'Login talab qilinadi.'});const sc=scopedWhere(me),w=sc.sql?' WHERE '+sc.sql:'';const hududlar=db.prepare('SELECT DISTINCT hudud v FROM excel_graduates'+w+' ORDER BY v').all(...sc.args).map(x=>x.v);const ops=db.prepare("SELECT DISTINCT op_oshp v FROM excel_graduates"+w+(w?' AND ':' WHERE ')+"op_oshp<>'' ORDER BY v").all(...sc.args).map(x=>x.v);const holatlar=db.prepare("SELECT DISTINCT holat v FROM excel_graduates"+w+(w?' AND ':' WHERE ')+"holat<>'' ORDER BY v").all(...sc.args).map(x=>x.v);return json(res,200,{hududlar,ops,holatlar});
