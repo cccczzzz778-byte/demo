@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID, scryptSync } from 'node:crypto';
 import postgres from 'postgres';
 import { handleAdminApi, type AdminApiDeps } from './super-admin-api.ts';
 import { appendAdminAudit, bootstrapSuperAdmin, ensureRbacSchema, getProfile, listAdminProfiles, upsertAdminProfile } from './rbac-store.ts';
-import { createSessionHash, ensureMonitorSchema, getRuntimeMetrics, isSessionRevoked, recordHttpResult, touchPresence } from './admin-monitor-store.ts';
+import { createSessionHash, ensureMonitorSchema, getRuntimeMetrics, isSessionRevoked, listPresence, recordHttpResult, revokeSession, touchPresence } from './admin-monitor-store.ts';
 import { LegacyAdminContract, normalizeLegacyActor } from './legacy-admin-contract.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
@@ -22,6 +22,7 @@ if (db) {
   await bootstrapSuperAdmin(db as any, 'admin');
 }
 
+function provinceWide(profile:any){return profile.role==='SUPER_ADMIN'||(profile.role==='CONTROL_ADMIN'&&profile.scopeType==='province');}
 const deps: AdminApiDeps = {
   getProfile: async (username) => db ? getProfile(db as any, username) : null,
   listAdminProfiles: async () => db ? listAdminProfiles(db as any) : [],
@@ -35,11 +36,31 @@ const deps: AdminApiDeps = {
     await db`INSERT INTO app_users(id,username,password_hash,role,institution_id,scope,active) VALUES(${id},${normalized},${legacyPasswordHash(password)},'ADMIN',NULL,${scope},true)`;
     return { id, username: normalized };
   },
+  listPresence: async (profile) => {
+    if(!db)return [];
+    return listPresence(db as any, profile.role==='SUPER_ADMIN'||profile.scopeType==='province'?{scopeType:'province'}:{scopeType:'district',districtId:profile.districtId});
+  },
+  revokeSession: async (sessionHash,profile) => {if(!db)throw new Error('DATABASE_UNAVAILABLE');await revokeSession(db as any,sessionHash,profile);},
+  listSecurityEvents: async (profile) => {
+    if(!db||!provinceWide(profile))return [];
+    return db`SELECT id,created_at,method,path,action,detail FROM app_security_events ORDER BY created_at DESC LIMIT 200`;
+  },
+  listAudit: async (profile) => {
+    if(!db)return [];
+    if(provinceWide(profile))return db`SELECT id,actor_username,action,target,details,created_at FROM app_admin_audit ORDER BY created_at DESC LIMIT 300`;
+    return db`SELECT a.id,a.actor_username,a.action,a.target,a.details,a.created_at FROM app_admin_audit a LEFT JOIN app_access_profiles p ON lower(p.username)=lower(a.actor_username) WHERE p.district_id=${profile.districtId} ORDER BY a.created_at DESC LIMIT 300`;
+  },
+  getHealth: async () => {
+    let dbOk=false;if(db){try{await db`SELECT 1`;dbOk=true}catch{}}
+    return {app:true,db:dbOk,deploymentId:Bun.env.RAILWAY_DEPLOYMENT_ID||null,...getRuntimeMetrics()};
+  },
+  updateHierarchy: async ({institutionId,parentId},profile) => {
+    if(!db)throw new Error('DATABASE_UNAVAILABLE');
+    await db`UPDATE app_institutions SET parent_id=${parentId},updated_at=now() WHERE id=${institutionId}`;
+  },
 };
 
-function isDirectLegacyUserManagement(pathname: string) {
-  return /^\/api\/v1\/(?:admin|region)\/users(?:\/|$)/.test(pathname);
-}
+function isDirectLegacyUserManagement(pathname: string) { return /^\/api\/v1\/(?:admin|region)\/users(?:\/|$)/.test(pathname); }
 function sessionToken(request: Request) {
   const cookie=request.headers.get('cookie')||'';
   for(const part of cookie.split(';')) { const [k,...v]=part.trim().split('='); if(k==='ssb_session') return decodeURIComponent(v.join('=')); }
@@ -67,11 +88,9 @@ Bun.serve = function superAdminServe(options: any) {
   return nativeServe({
     ...options,
     fetch: async (request: Request, server: any) => {
-      const started=performance.now();
-      let response: Response;
+      const started=performance.now(); let response: Response;
       try {
-        const pathname = new URL(request.url).pathname;
-        const token=sessionToken(request); const hash=token?createSessionHash(token):'';
+        const pathname = new URL(request.url).pathname; const token=sessionToken(request); const hash=token?createSessionHash(token):'';
         if(db && hash && await isSessionRevoked(db as any,hash)) {
           response=new Response(JSON.stringify({error:'Session revoked'}),{status:401,headers:{'content-type':'application/json; charset=utf-8','set-cookie':'ssb_session=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0','cache-control':'no-store'}});
         } else if (pathname.startsWith('/api/control/')) {
@@ -79,16 +98,13 @@ Bun.serve = function superAdminServe(options: any) {
           else response=(await handleAdminApi(request, innerFetch, deps)) || new Response(JSON.stringify({error:'Not found'}),{status:404});
         } else if (isDirectLegacyUserManagement(pathname)) {
           response=new Response(JSON.stringify({ error: 'Use scoped control API' }), { status: 403, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
-        } else {
-          response=await innerFetch(request, server);
-        }
+        } else response=await innerFetch(request, server);
         if(hash && response.status<500) void maybeTouchPresence(request,innerFetch,hash).catch(()=>{});
       } catch(e) {
         console.error('SUPER_ADMIN_WRAPPER_ERROR',e instanceof Error?e.message:String(e));
         response=new Response(JSON.stringify({error:'Internal server error'}),{status:500,headers:{'content-type':'application/json'}});
       }
-      recordHttpResult(response.status,performance.now()-started);
-      return response;
+      recordHttpResult(response.status,performance.now()-started); return response;
     },
   });
 };
