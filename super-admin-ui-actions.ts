@@ -3,7 +3,7 @@ import type { AccessProfile } from './rbac.ts';
 export function enhanceAdminShell(input:string,profile:AccessProfile):string{
   let styled=input.replace('<style>','<style nonce="__CSP_NONCE__">');
   styled=styled.replace('</head>',`<style nonce="__CSP_NONCE__" data-facility-preview-3d="1">
-.previewbox{width:min(1180px,96vw);max-height:94vh;overflow:auto}.facility3d{width:100%;height:72vh;border:0;border-radius:10px;background:#061126}
+.previewbox{width:min(1180px,96vw);max-height:94vh;overflow:auto}.previewbox .map{height:72vh;background:#061126}
 </style></head>`);
   const isSuper=profile.role==='SUPER_ADMIN';
   const canWrite=isSuper||profile.role==='ADMIN'||(profile.role==='CONTROL_ADMIN'&&profile.controlMode==='active');
@@ -12,7 +12,7 @@ preview=function(id){
  const x=state.institutions.find(i=>i.id===id);if(!x)return;
  $('#previewTitle').textContent=x.name;
  const src='/map?focusName='+encodeURIComponent(x.name);
- $('#previewBody').innerHTML='<iframe class="map facility3d" loading="eager" src="'+src+'" title="'+accountEsc(x.name)+' 3D"></iframe>';
+ $('#previewBody').innerHTML='<iframe class="map" loading="eager" src="'+src+'" title="Muassasa 3D"></iframe>';
  $('#preview').classList.add('open');
 };
 </script>`;
