@@ -1,0 +1,73 @@
+export const RESIDENTIAL_DPM_LAYOUT_MARKER = 'BUXORO_SSB_RESIDENTIAL_DPM_LAYOUT_V1';
+
+export function patchResidentialAndDpmLayout(input: string): string {
+  if (!input || input.includes(RESIDENTIAL_DPM_LAYOUT_MARKER)) return input;
+  let html = input;
+
+  // Every OP/OShP/TTB/KTMP/SHTB receives exactly 10 nearby residential models.
+  html = html.replace(
+    'const HOUSE_COUNTS_3D={TTB:10,SHTB:10,OP:5,OShP:4},MAX_HOUSE_INSTANCES=900',
+    'const HOUSE_COUNTS_3D={TTB:10,SHTB:10,KTMP:10,OP:10,OShP:10},MAX_HOUSE_INSTANCES=2600'
+  );
+  html = html.replace(
+    'off=(p.I.type==="TTB"||p.I.type==="SHTB"?1.35:.72)+ring*.34',
+    'off=(p.I.type==="TTB"||p.I.type==="SHTB"?1.35:p.I.type==="KTMP"?1.05:.82)+ring*.34'
+  );
+  html = html.replace(
+    'const center=(p.I.type==="TTB"||p.I.type==="SHTB")?p.I.name:null;',
+    'const center=(p.I.type==="TTB"||p.I.type==="SHTB"||p.I.type==="KTMP")?p.I.name:null;'
+  );
+
+  const nonce = html.match(/nonce=["']([^"']+)["']/)?.[1] || '';
+  const nonceAttr = nonce ? ` nonce="${nonce}"` : '';
+  const css = `<style${nonceAttr} id="buxoro-residential-dpm-layout-style">
+/* ${RESIDENTIAL_DPM_LAYOUT_MARKER} */
+#dpmCityMapPanel{background:linear-gradient(180deg,#061a31 0%,#081f39 52%,#06172b 100%)!important}
+.dpm-city-head{height:auto!important;min-height:68px!important;padding:14px 20px!important;box-sizing:border-box!important;background:rgba(5,24,45,.96)!important;backdrop-filter:blur(10px)}
+.dpm-city-title{font-size:22px!important}.dpm-city-sub{font-size:11px!important}
+#dpmCityStage{position:relative!important;display:grid!important;grid-template-columns:minmax(0,1fr) 340px!important;gap:14px!important;padding:14px 18px 18px!important;min-height:0!important;overflow:hidden!important}
+.dpm-city-mapbox{position:relative!important;inset:auto!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;border-radius:14px!important;background:linear-gradient(145deg,rgba(13,54,89,.8),rgba(5,27,54,.98))!important}
+#dpmCitySvg{width:100%!important;height:100%!important}
+.dpm-city-pin-label{display:none!important}
+.dpm-pin .halo{fill:rgba(69,214,174,.1)!important;stroke-width:1.5!important}.dpm-pin .pin{stroke-width:2.5!important}
+#dpmCityDetails{left:28px!important;bottom:30px!important;max-width:min(480px,calc(100% - 390px))!important;border-radius:12px!important;background:rgba(4,22,42,.93)!important}
+#dpmCardRail{min-width:0;min-height:0;display:flex;flex-direction:column;border:1px solid rgba(113,222,248,.22);border-radius:14px;background:rgba(5,27,51,.86);overflow:hidden;box-shadow:0 16px 36px rgba(0,0,0,.22)}
+.dpm-card-rail-head{padding:12px 13px;border-bottom:1px solid rgba(113,222,248,.16);background:rgba(9,42,72,.82)}
+.dpm-card-rail-head strong{display:block;font-size:13px;color:#f2fbff}.dpm-card-rail-head span{display:block;margin-top:3px;font-size:10px;color:#8fb9cc}
+#dpmCardList{padding:9px;overflow:auto;display:grid;gap:7px;align-content:start;scrollbar-width:thin}
+.dpm-list-card{appearance:none;width:100%;text-align:left;border:1px solid rgba(119,207,232,.16);border-radius:10px;background:rgba(8,38,65,.72);padding:9px 10px;color:#ecf9ff;cursor:pointer;transition:transform .14s ease,border-color .14s ease,background .14s ease;box-shadow:none}
+.dpm-list-card:hover{transform:translateY(-1px);border-color:rgba(91,229,193,.52);background:rgba(10,49,79,.92)}
+.dpm-list-card.active{border-color:#5be5c1;background:rgba(15,73,89,.8);box-shadow:inset 3px 0 0 #5be5c1}
+.dpm-list-card-name{display:block;font-size:12px;line-height:1.3;font-weight:800}.dpm-list-card-meta{display:block;margin-top:4px;font-size:9px;color:#8fb9cc;text-transform:uppercase;letter-spacing:.05em}
+.dpm-city-credit{display:none!important}
+@media(max-width:900px){#dpmCityStage{grid-template-columns:1fr!important;grid-template-rows:minmax(360px,1fr) 190px!important}.dpm-city-mapbox{grid-row:1}.dpm-card-rail{grid-row:2}#dpmCityDetails{left:22px!important;right:22px!important;bottom:218px!important;max-width:none!important}#dpmCardList{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.dpm-city-head{padding:10px 12px!important}.dpm-city-title{font-size:18px!important}#dpmCityStage{padding:8px!important;gap:8px!important;grid-template-rows:minmax(300px,1fr) 180px!important}#dpmCityDetails{left:14px!important;right:14px!important;bottom:202px!important;padding:8px 10px!important}#dpmCardList{grid-template-columns:1fr}.dpm-city-count{padding:6px 9px!important}}
+</style><meta name="buxoro-residential-dpm-layout" content="${RESIDENTIAL_DPM_LAYOUT_MARKER}">`;
+  html = html.includes('</head>') ? html.replace('</head>', css + '</head>') : html;
+
+  const runtime = `
+/* ${RESIDENTIAL_DPM_LAYOUT_MARKER} */
+function ensureDpmCardRail(){
+ const stage=document.getElementById('dpmCityStage');if(!stage)return null;let rail=document.getElementById('dpmCardRail');if(rail)return rail;
+ rail=document.createElement('aside');rail.id='dpmCardRail';rail.className='dpm-card-rail';rail.setAttribute('aria-label','DPM muassasalari');
+ const head=document.createElement('div');head.className='dpm-card-rail-head';const strong=document.createElement('strong');strong.textContent='DPM muassasalari';const sub=document.createElement('span');sub.textContent='Muassasani tanlash uchun kartani bosing';head.append(strong,sub);
+ const list=document.createElement('div');list.id='dpmCardList';rail.append(head,list);stage.appendChild(rail);return rail;
+}
+function syncDpmCardSelection(name){document.querySelectorAll('.dpm-list-card').forEach(card=>card.classList.toggle('active',card.dataset.name===name))}
+function renderDpmCards(selectedName=''){
+ const rail=ensureDpmCardRail(),list=document.getElementById('dpmCardList');if(!rail||!list)return;const dpms=typeof INS!=='undefined'?INS.filter(isDpmCityInstitution):[];list.textContent='';
+ dpms.forEach(I=>{const card=document.createElement('button');card.type='button';card.className='dpm-list-card'+(I.name===selectedName?' active':'');card.dataset.name=I.name||'';const name=document.createElement('span');name.className='dpm-list-card-name';name.textContent=I.name||'DPM';const meta=document.createElement('span');meta.className='dpm-list-card-meta';meta.textContent='DPM · Buxoro shahri';card.append(name,meta);card.addEventListener('click',()=>{const pin=[...document.querySelectorAll('.dpm-pin')].find(x=>x.getAttribute('data-name')===card.dataset.name);if(pin)pin.dispatchEvent(new MouseEvent('click',{bubbles:true}));syncDpmCardSelection(card.dataset.name||'');card.scrollIntoView({block:'nearest',behavior:'smooth'})});list.appendChild(card)});
+}
+if(typeof renderDpmCityMap==='function'){
+ const __renderDpmCityMapClean=renderDpmCityMap;
+ renderDpmCityMap=function(selectedName=''){__renderDpmCityMapClean(selectedName);renderDpmCards(selectedName);};
+}
+if(typeof showDpmCityMap==='function'){
+ const __showDpmCityMapClean=showDpmCityMap;
+ showDpmCityMap=function(show){const r=__showDpmCityMapClean(show);if(show)requestAnimationFrame(()=>renderDpmCards(new URLSearchParams(location.search).get('focusName')||''));return r;};
+}
+`;
+  const pos = html.lastIndexOf('</script>');
+  if (pos >= 0) html = html.slice(0, pos) + runtime + html.slice(pos);
+  return html;
+}
