@@ -1,5 +1,6 @@
 import { patchLeadership3d } from './leadership-3d-patch.ts';
 import { patchMapPrerequisites } from './map-prerequisites-patch.ts';
+import { patchLeadershipRuntimeFix } from './leadership-3d-runtime-fix.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
@@ -16,10 +17,11 @@ Bun.serve = function districtUxServe(options: any) {
         if ((pathname === '/leadership' || pathname === '/map') && response instanceof Response && response.status >= 200 && response.status < 300 && contentType.includes('text/html')) {
           const source = await response.text();
           const prepared = pathname === '/map' ? patchMapPrerequisites(source) : source;
+          const patched = patchLeadershipRuntimeFix(patchLeadership3d(prepared));
           const headers = new Headers(response.headers);
           headers.delete('content-length');
           headers.set('cache-control', 'no-store');
-          return new Response(patchLeadership3d(prepared), {
+          return new Response(patched, {
             status: response.status,
             statusText: response.statusText,
             headers,
