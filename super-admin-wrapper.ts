@@ -7,6 +7,7 @@ import { LegacyAdminContract, normalizeLegacyActor } from './legacy-admin-contra
 import { renderAdminShell } from './super-admin-ui.ts';
 import { enhanceAdminShell } from './super-admin-ui-actions.ts';
 import { patchSuperAdminModernUi } from './super-admin-modern-patch.ts';
+import { patchScoped3dCard } from './district-facility-3d-card-patch.ts';
 import { handleAdminAccountManagement } from './admin-account-management.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
@@ -105,6 +106,15 @@ async function maybeReplaceAdminPage(request:Request,response:Response,innerFetc
   const shell=patchSuperAdminModernUi(enhanceAdminShell(renderAdminShell(profile),profile));
   return new Response(shell.replaceAll('__CSP_NONCE__',nonce),{status:response.status,statusText:response.statusText,headers});
 }
+async function maybePatchScoped3dCard(request:Request,response:Response){
+  const pathname=new URL(request.url).pathname;
+  if(request.method!=='GET'||response.status!==200||(response.headers.get('content-type')||'').indexOf('text/html')<0)return response;
+  if(['/admin','/leadership','/map'].includes(pathname))return response;
+  const original=await response.text();const patched=patchScoped3dCard(original,pathname);
+  if(patched===original)return new Response(original,{status:response.status,statusText:response.statusText,headers:response.headers});
+  const headers=new Headers(response.headers);headers.delete('content-length');headers.set('cache-control','no-store');
+  return new Response(patched,{status:response.status,statusText:response.statusText,headers});
+}
 
 Bun.serve = function superAdminServe(options: any) {
   if (!options || typeof options.fetch !== 'function') return nativeServe(options);
@@ -118,13 +128,14 @@ Bun.serve = function superAdminServe(options: any) {
         if(db && hash && await isSessionRevoked(db as any,hash)) {
           response=new Response(JSON.stringify({error:'Session revoked'}),{status:401,headers:{'content-type':'application/json; charset=utf-8','set-cookie':'ssb_session=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0','cache-control':'no-store'}});
         } else if (pathname.startsWith('/api/control/')) {
-          if (!db) response=new Response(JSON.stringify({ error: 'Database unavailable' }), { status: 503, headers: { 'content-type': 'application/json' } });
+          if (!db) response=new Response(JSON.stringify({ error: 'Database unavailable' }), { status: 503, headers: { 'content-type':'application/json' } });
           else response=(await handleAdminAccountManagement(request,innerFetch,adminMgmtDeps)) || (await handleAdminApi(request, innerFetch, deps)) || new Response(JSON.stringify({error:'Not found'}),{status:404});
         } else if (isDirectLegacyUserManagement(pathname)) {
-          response=new Response(JSON.stringify({ error: 'Use scoped control API' }), { status: 403, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control':'no-store' } });
+          response=new Response(JSON.stringify({ error: 'Use scoped control API' }), { status: 403, headers: { 'content-type':'application/json; charset=utf-8', 'cache-control':'no-store' } });
         } else {
           response=await innerFetch(request, server);
           response=await maybeReplaceAdminPage(request,response,innerFetch);
+          response=await maybePatchScoped3dCard(request,response);
         }
         if(hash && response.status<500) void maybeTouchPresence(request,innerFetch,hash).catch(()=>{});
       } catch(e) {
