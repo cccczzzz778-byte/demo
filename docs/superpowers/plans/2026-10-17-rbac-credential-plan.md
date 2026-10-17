@@ -220,9 +220,9 @@ Expected: PASS.
 **Interfaces:**
 - Verifies Tasks 1–5 in Railway production.
 
-- [ ] **Step 1: Deploy the commit to the existing Railway service**
+- [ ] **Step 1: Point Railway at the new outer wrapper and deploy**
 
-Wait for `SUCCESS`; do not touch the Postgres service deployment.
+The current Railway service has a custom start command for the 3D wrapper, so update the application service start command to `bun super-admin-wrapper.ts` before verification. Deploy only the app service, wait for `SUCCESS`, and do not restart/redeploy the Postgres service.
 
 - [ ] **Step 2: Verify existing flows**
 
