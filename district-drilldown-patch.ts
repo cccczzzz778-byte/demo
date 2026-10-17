@@ -1,4 +1,4 @@
-export const DISTRICT_DRILLDOWN_MARKER='BUXORO_SSB_DISTRICT_DRILLDOWN_3D_V1';
+export const DISTRICT_DRILLDOWN_MARKER='BUXORO_SSB_DISTRICT_DRILLDOWN_3D_V2';
 
 export function patchDistrictDrilldown3d(input:string):string{
   if(!input||input.includes(DISTRICT_DRILLDOWN_MARKER)||!input.includes('</script>'))return input;
@@ -6,8 +6,11 @@ export function patchDistrictDrilldown3d(input:string):string{
   const runtime=`
 /* ${DISTRICT_DRILLDOWN_MARKER} */
 const __settlementsByDistrict=new Map();
-function __instVisuals(I){const s=new Set([I&&I.mesh,...((I&&I.fx)||[]),I&&I.ic].filter(Boolean));if(typeof meshes!=='undefined'&&Array.isArray(meshes))meshes.forEach(o=>{if(o&&o.userData&&o.userData.inst===I)s.add(o)});return [...s]}
+let __districtDrillSelected=null;
+function __collectInstVisuals(arr,I,s){if(Array.isArray(arr))arr.forEach(o=>{if(o&&o.userData&&o.userData.inst===I)s.add(o)})}
+function __instVisuals(I){const s=new Set([I&&I.mesh,...((I&&I.fx)||[]),I&&I.ic].filter(Boolean));if(typeof meshes!=='undefined')__collectInstVisuals(meshes,I,s);if(typeof rings!=='undefined')__collectInstVisuals(rings,I,s);if(typeof medicalCenterObjects!=='undefined')__collectInstVisuals(medicalCenterObjects,I,s);return [...s]}
 function __setInstitutionVisibility(n){if(typeof INS==='undefined')return;INS.forEach(I=>{const show=!!n&&I.dist===n;__instVisuals(I).forEach(o=>{o.visible=show})})}
+function __setAuxVisibility(n){const showFor=o=>!!n&&o&&o.userData&&o.userData.district===n;if(typeof medicalCenterObjects!=='undefined'&&Array.isArray(medicalCenterObjects))medicalCenterObjects.forEach(o=>o.visible=showFor(o));if(typeof neighbourhoodObjects!=='undefined'&&Array.isArray(neighbourhoodObjects))neighbourhoodObjects.forEach(o=>o.visible=showFor(o));if(typeof flowObjects!=='undefined'&&Array.isArray(flowObjects))flowObjects.forEach(o=>o.visible=showFor(o))}
 function __setDistrictEmphasis(n){if(typeof MT==='undefined')return;Object.entries(MT).forEach(([k,mm])=>{const active=!n||k===n;(mm||[]).forEach(m=>{if(!m)return;m.transparent=!!n;m.opacity=active?1:.12;if(m.emissive){if(n&&active)m.emissive.copy(m.color).multiplyScalar(.16);else m.emissive.setHex(0)}m.needsUpdate=true})})}
 function __districtArea(n){return typeof DATA==='undefined'?null:DATA.find(d=>d.n===n)||null}
 function __districtCameraRadius(n){const d=__districtArea(n);if(!d||!d.r||!d.r[0]||typeof W!=='function')return 82;let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;d.r[0].forEach((v,i)=>{if(i%2===0){const w=W(v,d.r[0][i+1]);minX=Math.min(minX,w[0]);maxX=Math.max(maxX,w[0]);minZ=Math.min(minZ,w[1]);maxZ=Math.max(maxZ,w[1])}});const span=Math.max(maxX-minX,maxZ-minZ);return Math.max(38,Math.min(96,span*1.45+22))}
@@ -17,7 +20,9 @@ function __layoutDistrictInstitutions(n){if(typeof P==='undefined'||typeof W!=='
 function __clearSettlementVisibility(){__settlementsByDistrict.forEach(arr=>arr.forEach(o=>o.visible=false))}
 function __showApproxSettlements(n){__clearSettlementVisibility();if(typeof THREE==='undefined'||typeof sc==='undefined'||typeof W!=='function')return;let arr=__settlementsByDistrict.get(n);if(arr){arr.forEach(o=>o.visible=true);return}const d=__districtArea(n);if(!d||!d.r||!d.r[0])return;const poly=d.r[0],xs=[],ys=[];for(let i=0;i<poly.length;i+=2){xs.push(poly[i]);ys.push(poly[i+1])}const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),count=Math.max(4,Math.min(9,Math.round(Math.sqrt(Math.max(.01,(x1-x0)*(y1-y0)))*1.25))),pts=[],seed=String(n).split('').reduce((a,c)=>((a*33+c.charCodeAt(0))>>>0),5381),rnd=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);for(let k=0;k<500&&pts.length<count;k++){const q=[x0+(x1-x0)*(.12+.76*rnd()),y0+(y1-y0)*(.12+.76*rnd())],ok=typeof safePointInPolygon==='function'?safePointInPolygon(q,poly,.12):(typeof inP==='function'&&inP(q,poly));if(!ok||pts.some(p=>Math.hypot(p[0]-q[0],p[1]-q[1])<Math.max(.5,(x1-x0+y1-y0)/24)))continue;pts.push(q)}arr=[];const bm=new THREE.MeshLambertMaterial({color:0x55798b,emissive:0x102a36,transparent:true,opacity:.78}),rm=new THREE.MeshLambertMaterial({color:0x8aa7b4,emissive:0x18313d,transparent:true,opacity:.82});pts.forEach((q,pi)=>{const w=W(q[0],q[1]),g=new THREE.Group();g.userData={district:n,kind:'approx-settlement'};for(let h=0;h<3;h++){const a=h*2.094+(pi%2)*.4,r=.8+(h%2)*.25,b=new THREE.Mesh(new THREE.BoxGeometry(.8,.7,.8),bm),roof=new THREE.Mesh(new THREE.ConeGeometry(.58,.45,4),rm);b.position.set(Math.cos(a)*r,.35,Math.sin(a)*r);roof.position.set(Math.cos(a)*r,.92,Math.sin(a)*r);roof.rotation.y=Math.PI/4;g.add(b,roof)}g.position.set(w[0],(typeof H!=='undefined'?(H[n]||0):0)+.35,w[1]);sc.add(g);arr.push(g)});__settlementsByDistrict.set(n,arr)}
 function __districtFocusTarget(n){const d=__districtArea(n);if(d&&d.c&&typeof W==='function'){const w=W(d.c[0],d.c[1]);return {x:w[0],z:w[1]}}const I=INS.find(x=>x.dist===n);return I&&I.pos?{x:I.pos.x,z:I.pos.z}:{x:0,z:0}}
-setTimeout(()=>{try{__setInstitutionVisibility(null);__setDistrictEmphasis(null);__clearSettlementVisibility()}catch(e){console.warn('DISTRICT_DRILLDOWN_INIT',e&&e.message||e)}},80);
+function __enforceDistrictVisibility(){try{__setInstitutionVisibility(__districtDrillSelected);__setAuxVisibility(__districtDrillSelected);if(!__districtDrillSelected)__clearSettlementVisibility()}catch(e){console.warn('DISTRICT_DRILLDOWN_VISIBILITY',e&&e.message||e)}}
+[0,80,250,600,1200].forEach(ms=>setTimeout(__enforceDistrictVisibility,ms));
+setInterval(__enforceDistrictVisibility,180);
 `;
   const pos=html.lastIndexOf('</script>');
   if(pos>=0)html=html.slice(0,pos)+runtime+html.slice(pos);
@@ -27,9 +32,9 @@ setTimeout(()=>{try{__setInstitutionVisibility(null);__setDistrictEmphasis(null)
     'function home(){resetMapFocus();tgG.set(0,0,0);rdG=270;phG=1;fly=true;selLab.hide=true;render("Buxoro viloyati",INS)}',
     'function home(){applyDistrictFocus(null);tgG.set(0,0,0);rdG=270;phG=1;fly=true;selLab.hide=true;render("Buxoro viloyati",INS)}'
   ];
-  for(const h of homes)if(html.includes(h)){html=html.replace(h,'function home(){__setInstitutionVisibility(null);__setDistrictEmphasis(null);__clearSettlementVisibility();tgG.set(0,0,0);rdG=270;phG=1;fly=true;selLab.hide=true;render("Buxoro viloyati",INS)}');break}
+  for(const h of homes)if(html.includes(h)){html=html.replace(h,'function home(){__districtDrillSelected=null;__enforceDistrictVisibility();__setDistrictEmphasis(null);__clearSettlementVisibility();tgG.set(0,0,0);rdG=270;phG=1;fly=true;selLab.hide=true;render("Buxoro viloyati",INS)}');break}
   const distRe=/function selectDist\(n\)\{const t=INS\.find\(x=>\(x\.type==="TTB"\|\|x\.type==="SHTB"\)&&x\.dist===n\)\|\|INS\.find\(x=>x\.dist===n\);if\(!t\)return;(?:applyDistrictFocus\(n\);)?selLab\.hide=true;tgG\.set\(t\.pos\.x,0,t\.pos\.z\);rdG=110;phG=\.9;fly=true;render\(n\.endsWith\("shahri"\)\?n:n\+" tumani",INS\.filter\(x=>x\.dist===n\)\)\}/;
-  html=html.replace(distRe,'function selectDist(n){const t=INS.find(x=>(x.type==="TTB"||x.type==="SHTB")&&x.dist===n)||INS.find(x=>x.dist===n);if(!t)return;__layoutDistrictInstitutions(n);__setDistrictEmphasis(n);__setInstitutionVisibility(n);__showApproxSettlements(n);const q=__districtFocusTarget(n);selLab.hide=true;tgG.set(q.x,0,q.z);rdG=__districtCameraRadius(n);phG=.82;fly=true;render(n.endsWith("shahri")?n:n+" tumani",INS.filter(x=>x.dist===n))}');
+  html=html.replace(distRe,'function selectDist(n){const t=INS.find(x=>(x.type==="TTB"||x.type==="SHTB")&&x.dist===n)||INS.find(x=>x.dist===n);if(!t)return;__districtDrillSelected=n;__layoutDistrictInstitutions(n);__setDistrictEmphasis(n);__enforceDistrictVisibility();__showApproxSettlements(n);const q=__districtFocusTarget(n);selLab.hide=true;tgG.set(q.x,0,q.z);rdG=__districtCameraRadius(n);phG=.82;fly=true;render(n.endsWith("shahri")?n:n+" tumani",INS.filter(x=>x.dist===n))}');
   if(html.includes('</head>'))html=html.replace('</head>',`<meta name="buxoro-district-drilldown" content="${DISTRICT_DRILLDOWN_MARKER}"></head>`);
   return html;
 }
