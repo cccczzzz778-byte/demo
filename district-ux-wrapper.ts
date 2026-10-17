@@ -5,6 +5,7 @@ import { patch3dPerformanceAndFacilityFocus } from './leadership-performance-pat
 import { patchOriginalMapColors } from './leadership-original-colors-patch.ts';
 import { patchMapModesTv } from './leadership-map-modes-patch.ts';
 import { patchDpmCityMap } from './dpm-city-map-patch.ts';
+import { patchResidentialAndDpmLayout } from './residential-dpm-layout-patch.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
@@ -25,7 +26,8 @@ Bun.serve = function districtUxServe(options: any) {
           const optimized = patch3dPerformanceAndFacilityFocus(redesigned);
           const originalColors = patchOriginalMapColors(optimized);
           const modeHtml = patchMapModesTv(originalColors);
-          const finalHtml = patchDpmCityMap(modeHtml);
+          const dpmHtml = patchDpmCityMap(modeHtml);
+          const finalHtml = patchResidentialAndDpmLayout(dpmHtml);
           const headers = new Headers(response.headers);
           headers.delete('content-length');
           headers.set('cache-control', 'no-store');
