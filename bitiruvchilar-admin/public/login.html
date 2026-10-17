@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kirish · Bitiruvchilar paneli</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@500&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="login-wrap">
+  <form class="login-card" id="f" novalidate>
+    <div class="brand-mark" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3z" stroke="#3fe0d0" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+    <div>
+      <h1>Bitiruvchilar paneli</h1>
+      <p class="note">Buxoro viloyati tibbiyot bitiruvchilari · 2026</p>
+    </div>
+    <label class="f">Login<input type="text" id="login" autocomplete="username" required autofocus></label>
+    <label class="f">Parol<input type="password" id="password" autocomplete="current-password" required></label>
+    <div class="err" id="err" role="alert"></div>
+    <button class="btn primary" type="submit" id="go">Kirish</button>
+    <p class="note">Shaxsga doir maʼlumotlar bilan ishlaysiz. Parolingizni hech kimga bermang.</p>
+  </form>
+</div>
+<script src="/login.js"></script>
+</body>
+</html>
