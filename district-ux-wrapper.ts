@@ -4,10 +4,8 @@ import { patchLeadershipRuntimeFix } from './leadership-3d-runtime-fix.ts';
 import { patch3dPerformanceAndFacilityFocus } from './leadership-performance-patch.ts';
 import { patchOriginalMapColors } from './leadership-original-colors-patch.ts';
 import { patchMapModesTv } from './leadership-map-modes-patch.ts';
-import { patchDpmCityMap } from './dpm-city-map-patch.ts';
 import { patchResidentialAndDpmLayout } from './residential-dpm-layout-patch.ts';
-import { patchDpmPremium3d } from './dpm-premium-3d-patch.ts';
-import { patchDpmTtbStyle } from './dpm-ttb-style-patch.ts';
+import { patchIntegratedDpmMainMap } from './integrated-dpm-main-map-patch.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
@@ -28,10 +26,8 @@ Bun.serve = function districtUxServe(options: any) {
           const optimized = patch3dPerformanceAndFacilityFocus(redesigned);
           const originalColors = patchOriginalMapColors(optimized);
           const modeHtml = patchMapModesTv(originalColors);
-          const dpmHtml = patchDpmCityMap(modeHtml);
-          const residentialHtml = patchResidentialAndDpmLayout(dpmHtml);
-          const premiumHtml = patchDpmPremium3d(residentialHtml);
-          const finalHtml = patchDpmTtbStyle(premiumHtml);
+          const residentialHtml = patchResidentialAndDpmLayout(modeHtml);
+          const finalHtml = patchIntegratedDpmMainMap(residentialHtml);
           const headers = new Headers(response.headers);
           headers.delete('content-length');
           headers.set('cache-control', 'no-store');
