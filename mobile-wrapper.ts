@@ -81,7 +81,7 @@ Bun.serve = function mobileCompatibleServe(options: any) {
 };
 
 // The base application seeds username "admin" from ADMIN_DEFAULT_PASSWORD.
-// Synchronize that persistent row whenever the desired password changes.
+// Synchronize only that root row whenever the desired password changes.
 const adminUser = 'admin';
 const adminPass = Bun.env.ADMIN_DEFAULT_PASSWORD || Bun.env.ADMIN_PASSWORD || '';
 const databaseUrl = Bun.env.DATABASE_URL || '';
@@ -104,7 +104,7 @@ if (databaseUrl && adminPass) {
     if (!done.length) {
       const table = await adminSyncDb`SELECT to_regclass('public.app_users')::text AS name`;
       if (table[0]?.name) {
-        await adminSyncDb`DELETE FROM app_users WHERE username='admin' OR upper(role::text)='ADMIN'`;
+        await adminSyncDb`DELETE FROM app_users WHERE username='admin'`;
         adminNeedsReseed = true;
       }
     }
