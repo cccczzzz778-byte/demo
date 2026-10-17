@@ -1,11 +1,30 @@
 'use strict';
 (()=>{
- const norm=s=>String(s??'').toLowerCase().replace(/[ʻʼ’‘`']/g,'').replace(/ё/g,'е').replace(/ў/g,'у').replace(/қ/g,'к').replace(/ғ/g,'г').replace(/ҳ/g,'х').replace(/[^a-zа-я0-9]+/gi,' ').trim();
- const fmt=n=>String(Math.round(Number(n)||0)).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
- let summary=null,timer=null;
- async function load(){try{const r=await fetch('/api/public/excel-summary',{cache:'no-store'});summary=await r.json();render()}catch{}}
- function currentMetrics(){if(!summary)return null;const title=document.getElementById('left-title')?.textContent||'';if(norm(title).includes('viloyat'))return {label:'Viloyat',...(summary.metrics||{})};const n=norm(title);const region=(summary.hududlar||[]).find(x=>norm(x.name)===n||norm(x.key)===n||n.includes(norm(x.key))||norm(x.name).includes(n));return region?{label:region.name,total:region.jami,unemployed:region.ishsiz,examined:region.examined,deceased:region.deceased,working:region.working,higher:region.higher,nonHigher:region.nonHigher}:summary.metrics}
- function render(){const box=document.getElementById('mut'),title=document.getElementById('mut-title'),sec=document.getElementById('mutaxassisliklar');if(!box||!title||!summary)return;const m=currentMetrics();if(!m)return;title.textContent=m.label&&m.label!=='Viloyat'?'Holat ko‘rsatkichlari · '+m.label.replace(' tumani',''):'Holat ko‘rsatkichlari';const sp=sec?.querySelector('h2 span');if(sp)sp.textContent='soni · ulushi';const total=Math.max(1,Number(m.total)||0);const rows=[['Ishsiz',m.unemployed],['Ko‘rikdan o‘tgan',m.examined],['Vafot etgan',m.deceased],['Ishlayapti',m.working],['Oliy ma’lumotli',m.higher],['Oliy ma’lumotli emas',m.nonHigher]];box.innerHTML=rows.map(([label,v])=>{const n=Number(v)||0,p=Math.max(0,Math.min(100,n/total*100));return `<div style="margin:9px 0"><div style="display:flex;justify-content:space-between;gap:8px;font-size:12px"><b style="font-weight:600">${label}</b><span style="font-family:JetBrains Mono,monospace">${fmt(n)} · ${p.toFixed(1)}%</span></div><div style="height:5px;background:#123544;border-radius:9px;overflow:hidden;margin-top:5px"><div style="height:100%;width:${p}%;background:linear-gradient(90deg,#42e1d0,#56a8ff);border-radius:9px"></div></div></div>`}).join('')}
- function schedule(){clearTimeout(timer);timer=setTimeout(()=>{render();load()},80)}
- document.addEventListener('DOMContentLoaded',()=>{load();const t=document.getElementById('left-title');if(t)new MutationObserver(schedule).observe(t,{childList:true,characterData:true,subtree:true})});
+  function applyMapOnly(){
+    if(document.getElementById('map-only-clean-style')) return;
+    const style=document.createElement('style');
+    style.id='map-only-clean-style';
+    style.textContent=`
+      html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#02080d!important}
+      body::after{display:none!important}
+      .app{display:block!important;position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;min-height:0!important;padding:0!important;margin:0!important}
+      header.top,.col.side.left,.col.side.right,.foot{display:none!important}
+      .col.center{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;display:block!important;margin:0!important;padding:0!important}
+      .map-wrap{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;margin:0!important}
+      .map-hud{left:auto!important;right:14px!important;top:14px!important;justify-content:flex-end!important}
+      .map-hud .t,.legend{display:none!important}
+      .hud-btns{justify-content:flex-end!important}
+      #admin,.admin{display:none!important}
+    `;
+    document.head.appendChild(style);
+    const map=document.getElementById('map');
+    if(map){
+      map.style.width='100%';
+      map.style.height='100%';
+    }
+    window.dispatchEvent(new Event('resize'));
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',applyMapOnly,{once:true});
+  else applyMapOnly();
+  setTimeout(applyMapOnly,250);
 })();
