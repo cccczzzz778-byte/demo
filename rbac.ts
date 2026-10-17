@@ -66,10 +66,10 @@ export function authorize(profile: AccessProfile, action: RbacAction, target: Re
 
   if (profile.role === 'ADMIN') {
     if (profile.scopeType !== 'district' || !canonicalDistrict(profile.districtId)) return deny('admin requires one district');
+    if (target.kind === 'DPM') return deny('DPM is province level');
     if (!inDistrict(profile, target)) return deny('outside assigned district');
-    if (target.kind === 'DPM' && credentialAction(action)) return deny('DPM credential is super admin only');
     if (action === 'VIEW') return allow('district view');
-    if (credentialAction(action) && target.kind !== 'DPM') return allow('district credential management');
+    if (credentialAction(action)) return allow('district credential management');
     return deny('action not allowed');
   }
 
@@ -78,12 +78,10 @@ export function authorize(profile: AccessProfile, action: RbacAction, target: Re
     const province = profile.scopeType === 'province';
     const district = profile.scopeType === 'district' && !!canonicalDistrict(profile.districtId);
     if (!province && !district) return deny('invalid control scope');
+    if (!province && target.kind === 'DPM') return deny('district control admin cannot view DPM');
     if (!province && !inDistrict(profile, target)) return deny('outside assigned district');
 
-    if (action === 'VIEW') {
-      if (target.kind === 'DPM' && !province) return deny('district control admin cannot view DPM');
-      return allow(province ? 'province view' : 'district view');
-    }
+    if (action === 'VIEW') return allow(province ? 'province view' : 'district view');
 
     if (profile.controlMode === 'viewer') return deny('viewer is read-only');
     if (target.kind === 'DPM' && credentialAction(action)) return deny('DPM credential is super admin only');
