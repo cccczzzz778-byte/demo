@@ -7,6 +7,7 @@ import { patchMapModesTv } from './leadership-map-modes-patch.ts';
 import { patchDpmCityMap } from './dpm-city-map-patch.ts';
 import { patchResidentialAndDpmLayout } from './residential-dpm-layout-patch.ts';
 import { patchDpmPremium3d } from './dpm-premium-3d-patch.ts';
+import { patchDpmTtbStyle } from './dpm-ttb-style-patch.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
@@ -29,7 +30,8 @@ Bun.serve = function districtUxServe(options: any) {
           const modeHtml = patchMapModesTv(originalColors);
           const dpmHtml = patchDpmCityMap(modeHtml);
           const residentialHtml = patchResidentialAndDpmLayout(dpmHtml);
-          const finalHtml = patchDpmPremium3d(residentialHtml);
+          const premiumHtml = patchDpmPremium3d(residentialHtml);
+          const finalHtml = patchDpmTtbStyle(premiumHtml);
           const headers = new Headers(response.headers);
           headers.delete('content-length');
           headers.set('cache-control', 'no-store');
