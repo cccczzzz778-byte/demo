@@ -25,13 +25,17 @@ describe('leadership map modes + TV',()=>{
     expect(h).toContain("mode==='main'?MAIN_TYPES.has(I.type):isDpmInstitution(I)");
   });
 
-  test('DPM mode zooms to Buxoro city and distributes DPM markers around it',()=>{
+  test('DPM mode distributes DPM markers but does not force a fixed camera center or zoom',()=>{
     const h=patchMapModesTv(fixture);
     expect(h).toContain('function repositionDpmAcrossBukhara');
     expect(h).toContain('Buxoro shahri');
     expect(h).toContain('Math.sqrt(i+1)');
-    expect(h).toContain('rdG=72');
-    expect(h).toContain('phG=.82');
+    expect(h).not.toContain('rdG=72');
+    expect(h).not.toContain('phG=.82');
+    expect(h).not.toContain('tgG.set(w[0],0,w[1])');
+    expect(h).not.toContain('tgG.set(0,0,0)');
+    expect(h).toContain("if(typeof auto!=='undefined')auto=false");
+    expect(h).toContain("if(typeof fly!=='undefined')fly=false");
   });
 
   test('disables hierarchical flow construction and animation before page runtime',()=>{
