@@ -1,9 +1,41 @@
+import { randomBytes } from 'node:crypto';
 import { patchMapPrerequisites } from './map-prerequisites-patch.ts';
 import { patchInstitutionScope } from './institution-scope-patch.ts';
 import { patchDistrictDrilldown3d } from './district-drilldown-patch.ts';
 import { patchProvinceMarkerHardening } from './province-marker-hardening-patch.ts';
+import { UPLOADED_LEADERSHIP_HTML } from './leadership-uploaded-source.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
+
+function renderUploadedLeadership() {
+  const nonce = randomBytes(16).toString('base64');
+  const html = UPLOADED_LEADERSHIP_HTML
+    .replace(/<style(?![^>]*\bnonce=)/g, `<style nonce="${nonce}"`)
+    .replace(/<script(?![^>]*\bnonce=)/g, `<script nonce="${nonce}"`);
+  const headers = new Headers({
+    'content-type': 'text/html; charset=utf-8',
+    'cache-control': 'no-store',
+    'x-content-type-options': 'nosniff',
+    'referrer-policy': 'same-origin',
+    'x-frame-options': 'SAMEORIGIN',
+    'content-security-policy': [
+      "default-src 'self'",
+      "base-uri 'none'",
+      "object-src 'none'",
+      "frame-ancestors 'self'",
+      "form-action 'self'",
+      `script-src 'self' 'nonce-${nonce}' https://cdnjs.cloudflare.com`,
+      `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com`,
+      "style-src-attr 'unsafe-inline'",
+      "img-src 'self' data: blob:",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "connect-src 'self'",
+      "media-src 'self' blob:",
+      "worker-src 'self' blob:",
+    ].join('; '),
+  });
+  return new Response(html, { status: 200, headers });
+}
 
 function allowScoped3dEmbedding(headers: Headers, pathname: string) {
   const isMapDocument = pathname === '/leadership' || pathname === '/map';
@@ -30,14 +62,18 @@ Bun.serve = function districtUxServe(options: any) {
   return nativeServe({
     ...options,
     fetch: async (request: Request, server: any) => {
+      const pathname = new URL(request.url).pathname;
+      if (request.method === 'GET' && pathname === '/leadership') {
+        return renderUploadedLeadership();
+      }
+
       const response = await innerFetch(request, server);
       try {
-        const pathname = new URL(request.url).pathname;
         const contentType = response?.headers?.get?.('content-type') || '';
         if (response instanceof Response && response.status >= 200 && response.status < 300 && contentType.includes('text/html')) {
-          if (pathname === '/leadership' || pathname === '/map') {
+          if (pathname === '/map') {
             const source = await response.text();
-            const prepared = pathname === '/map' ? patchMapPrerequisites(source) : source;
+            const prepared = patchMapPrerequisites(source);
             const scopedHtml = patchInstitutionScope(prepared);
             const drilldownHtml = patchDistrictDrilldown3d(scopedHtml);
             const finalHtml = patchProvinceMarkerHardening(drilldownHtml);
