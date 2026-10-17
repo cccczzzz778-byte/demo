@@ -4,7 +4,7 @@ function normalizeEducationLevel(value){
   const n=norm(value);
   if(!n)return 'unknown';
   if(/(^| )otm($| )|oliy talim|олий таълим|(^| )отм($| )|bakalavr|magistr/.test(n))return 'OTM';
-  if(/texnikum|техникум|kollej|коллеж/.test(n))return 'Texnikum';
+  if(/texnikum|техникум|kollej|коллеж|kasbiy|касбий|prof|проф/.test(n))return 'Texnikum';
   if(/litsey|лицей/.test(n))return 'Litsey';
   if(/maktab|мактаб/.test(n))return 'Maktab';
   return 'unknown';
