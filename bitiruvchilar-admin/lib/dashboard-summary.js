@@ -11,7 +11,7 @@ function liveReady(db){
  return t===9823&&h===3184&&e===604&&m===283;
 }
 function buildDashboardSummary(db,hudud=''){
- if(!liveReady(db))return sourceSummary(hudud);
+ if(tableExists(db,'seed_meta')&&!liveReady(db))return sourceSummary(hudud);
  const filter=hudud?canonicalHudud(hudud):'';
  const rows=filter?db.prepare('SELECT hudud,education_level,bitirgan_turi,employment_status,holat,medical_exam_date,health_status,diagnosis,diagnosis_category,medical_education,medical_education_level FROM excel_graduates WHERE hudud=?').all(filter):db.prepare('SELECT hudud,education_level,bitirgan_turi,employment_status,holat,medical_exam_date,health_status,diagnosis,diagnosis_category,medical_education,medical_education_level FROM excel_graduates').all();
  const a=aggregateGraduateRows(rows);
