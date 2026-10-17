@@ -5,13 +5,18 @@ import { patchDistrictDrilldown3d } from './district-drilldown-patch.ts';
 import { patchProvinceMarkerHardening } from './province-marker-hardening-patch.ts';
 import { patchLeadershipDistrictSwitch } from './leadership-district-switch-patch.ts';
 import { patchLeadershipDistrictDashboardStyle } from './leadership-district-dashboard-style-patch.ts';
+import { patchLeadershipDistrictMapFocus } from './leadership-district-map-focus-patch.ts';
 import { UPLOADED_LEADERSHIP_HTML } from './leadership-uploaded-source.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
 function renderUploadedLeadership() {
   const nonce = randomBytes(16).toString('base64');
-  const html = patchLeadershipDistrictDashboardStyle(patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML))
+  const html = patchLeadershipDistrictMapFocus(
+    patchLeadershipDistrictDashboardStyle(
+      patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
+    )
+  )
     .replace(/BUXORO VILOYATI TIBBIYOT MUASSASALARI/g, 'Buxoro viloyati SSB Dashboardi')
     .replace(/<style(?![^>]*\bnonce=)/g, `<style nonce="${nonce}"`)
     .replace(/<script(?![^>]*\bnonce=)/g, `<script nonce="${nonce}"`);
