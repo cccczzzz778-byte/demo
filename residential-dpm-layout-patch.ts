@@ -1,10 +1,9 @@
-export const RESIDENTIAL_DPM_LAYOUT_MARKER = 'BUXORO_SSB_RESIDENTIAL_DPM_LAYOUT_V2';
+export const RESIDENTIAL_DPM_LAYOUT_MARKER = 'BUXORO_SSB_RESIDENTIAL_DPM_LAYOUT_V3';
 
 export function patchResidentialAndDpmLayout(input: string): string {
   if (!input || input.includes(RESIDENTIAL_DPM_LAYOUT_MARKER)) return input;
   let html = input;
 
-  // Every OP/OShP/TTB/MP(KTMP)/SHTB gets exactly 10 clearly visible residential models.
   html = html.replace(
     'const HOUSE_COUNTS_3D={TTB:10,SHTB:10,OP:5,OShP:4},MAX_HOUSE_INSTANCES=900',
     'const HOUSE_COUNTS_3D={TTB:10,SHTB:10,MP:10,KTMP:10,OP:10,OShP:10},MAX_HOUSE_INSTANCES=2600'
@@ -27,7 +26,7 @@ export function patchResidentialAndDpmLayout(input: string): string {
   );
   html = html.replace(
     'm4.makeScale(.45,.58,.45).setPosition(w[0],p.y+.04,w[1]);bodies.setMatrixAt(i,m4);m4.makeScale(.51,.28,.51).setPosition(w[0],p.y+.62,w[1]);roofs.setMatrixAt(i,m4)',
-    'm4.makeScale(.72,.78,.72).setPosition(w[0],p.y+.04,w[1]);bodies.setMatrixAt(i,m4);m4.makeScale(.80,.38,.80).setPosition(w[0],p.y+.82,w[1]);roofs.setMatrixAt(i,m4)'
+    'm4.makeScale(.52,.56,.52).setPosition(w[0],p.y+.04,w[1]);bodies.setMatrixAt(i,m4);m4.makeScale(.58,.30,.58).setPosition(w[0],p.y+.60,w[1]);roofs.setMatrixAt(i,m4)'
   );
   html = html.replace(
     'const center=(p.I.type==="TTB"||p.I.type==="SHTB")?p.I.name:null;',
@@ -42,61 +41,51 @@ export function patchResidentialAndDpmLayout(input: string): string {
   const nonceAttr = nonce ? ` nonce="${nonce}"` : '';
   const css = `<style${nonceAttr} id="buxoro-residential-dpm-layout-style">
 /* ${RESIDENTIAL_DPM_LAYOUT_MARKER} */
-#dpmCityMapPanel{background:linear-gradient(180deg,#061a31 0%,#081f39 52%,#06172b 100%)!important}
-.dpm-city-head{height:auto!important;min-height:68px!important;padding:14px 20px!important;box-sizing:border-box!important;background:rgba(5,24,45,.96)!important;backdrop-filter:blur(10px)}
-.dpm-city-title{font-size:22px!important}.dpm-city-sub{font-size:11px!important}
-#dpmCityStage{position:relative!important;display:grid!important;grid-template-columns:minmax(0,1fr) 340px!important;gap:14px!important;padding:14px 18px 18px!important;min-height:0!important;overflow:hidden!important}
-.dpm-city-mapbox{position:relative!important;inset:auto!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;border-radius:14px!important;background:linear-gradient(145deg,rgba(13,54,89,.8),rgba(5,27,54,.98))!important}
-#dpmCitySvg{width:100%!important;height:100%!important;position:absolute!important;inset:0!important}
-.dpm-city-pin-label{display:none!important}
-.dpm-pin .halo{fill:rgba(69,214,174,.1)!important;stroke-width:1.5!important}.dpm-pin .pin{stroke-width:2.5!important}
-#dpmVisualPins{position:absolute;inset:5% 5% 9%;z-index:4;pointer-events:none}
-.dpm-vpin{position:absolute;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;border:2px solid #61efc3;background:#082d49;box-shadow:0 0 0 7px rgba(70,226,182,.11),0 4px 14px rgba(0,0,0,.4);pointer-events:auto;cursor:pointer;display:grid;place-items:center;color:#61efc3;font-weight:1000;font-size:17px;transition:.16s ease}
-.dpm-vpin:hover,.dpm-vpin.active{border-color:#ffd76a;color:#ffd76a;box-shadow:0 0 0 9px rgba(255,215,106,.13),0 5px 18px rgba(0,0,0,.45);transform:translate(-50%,-50%) scale(1.12)}
-.dpm-vpin-label{position:absolute;left:50%;top:36px;transform:translateX(-50%);min-width:110px;max-width:155px;padding:4px 6px;border:1px solid rgba(119,211,237,.36);border-radius:6px;background:rgba(3,23,43,.9);color:#effbff;font-size:9px;font-weight:800;line-height:1.15;text-align:center;white-space:normal;opacity:0;pointer-events:none;transition:.14s}
-.dpm-vpin:hover .dpm-vpin-label,.dpm-vpin.active .dpm-vpin-label{opacity:1}
-#dpmCityDetails{left:28px!important;bottom:30px!important;max-width:min(480px,calc(100% - 390px))!important;border-radius:12px!important;background:rgba(4,22,42,.93)!important;z-index:8!important}
-#dpmCardRail{min-width:0;min-height:0;display:flex;flex-direction:column;border:1px solid rgba(113,222,248,.22);border-radius:14px;background:rgba(5,27,51,.86);overflow:hidden;box-shadow:0 16px 36px rgba(0,0,0,.22)}
-.dpm-card-rail-head{padding:12px 13px;border-bottom:1px solid rgba(113,222,248,.16);background:rgba(9,42,72,.82)}
-.dpm-card-rail-head strong{display:block;font-size:13px;color:#f2fbff}.dpm-card-rail-head span{display:block;margin-top:3px;font-size:10px;color:#8fb9cc}
-#dpmCardList{padding:9px;overflow:auto;display:grid;gap:7px;align-content:start;scrollbar-width:thin}
-.dpm-list-card{appearance:none;width:100%;text-align:left;border:1px solid rgba(119,207,232,.16);border-radius:10px;background:rgba(8,38,65,.72);padding:9px 10px;color:#ecf9ff;cursor:pointer;transition:transform .14s ease,border-color .14s ease,background .14s ease;box-shadow:none}
-.dpm-list-card:hover{transform:translateY(-1px);border-color:rgba(91,229,193,.52);background:rgba(10,49,79,.92)}
-.dpm-list-card.active{border-color:#5be5c1;background:rgba(15,73,89,.8);box-shadow:inset 3px 0 0 #5be5c1}
-.dpm-list-card-name{display:block;font-size:12px;line-height:1.3;font-weight:800}.dpm-list-card-meta{display:block;margin-top:4px;font-size:9px;color:#8fb9cc;text-transform:uppercase;letter-spacing:.05em}
+#dpmCityMapPanel{background:#06182c!important}
+.dpm-city-head{height:auto!important;min-height:66px!important;padding:12px 18px!important;box-sizing:border-box!important;background:#071c34!important}
+#dpmCityStage{position:relative!important;display:grid!important;grid-template-columns:minmax(0,1fr) 340px!important;gap:12px!important;padding:12px 16px 16px!important;min-height:0!important;overflow:hidden!important}
+.dpm-city-mapbox{position:relative!important;inset:auto!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;border-radius:14px!important;overflow:hidden!important;background:#08213c!important;border:1px solid rgba(112,218,255,.22)!important}
+#dpmCitySvg{display:none!important}
+#dpmSchematic{position:absolute;inset:4%;overflow:hidden}
+#dpmSchematic::before{content:"";position:absolute;inset:6% 7% 7%;clip-path:polygon(15% 11%,83% 9%,94% 31%,90% 66%,74% 89%,28% 91%,10% 68%,6% 35%);background:linear-gradient(145deg,#123e67,#0a2a4b);border:1px solid rgba(123,224,250,.5);box-shadow:inset 0 0 60px rgba(0,0,0,.18),0 0 25px rgba(60,196,235,.08)}
+#dpmSchematic::after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(113,211,240,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(113,211,240,.08) 1px,transparent 1px);background-size:42px 42px;pointer-events:none}
+#dpmPinLayer{position:absolute;inset:10% 11% 12%;z-index:3}
+.dpm-map-pin{position:absolute;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;border:2px solid #63efc5;background:#082a45;color:#63efc5;font-weight:900;display:grid;place-items:center;cursor:pointer;box-shadow:0 0 0 5px rgba(99,239,197,.10),0 4px 12px rgba(0,0,0,.35);font-size:14px;padding:0}
+.dpm-map-pin:hover,.dpm-map-pin.active{border-color:#ffd468;color:#ffd468;box-shadow:0 0 0 7px rgba(255,212,104,.12),0 5px 16px rgba(0,0,0,.42);z-index:5}
+.dpm-map-label{position:absolute;left:50%;top:28px;transform:translateX(-50%);display:none;min-width:100px;max-width:150px;padding:4px 6px;border-radius:6px;border:1px solid rgba(116,215,241,.35);background:rgba(3,23,43,.95);color:#eefaff;font-size:9px;line-height:1.15;pointer-events:none}
+.dpm-map-pin:hover .dpm-map-label,.dpm-map-pin.active .dpm-map-label{display:block}
+#dpmCityDetails{left:30px!important;bottom:28px!important;max-width:min(520px,calc(100% - 390px))!important;z-index:6!important}
+#dpmCardRail{min-width:0;min-height:0;display:flex;flex-direction:column;border:1px solid rgba(113,222,248,.20);border-radius:14px;background:#071d35;overflow:hidden}
+.dpm-card-rail-head{padding:11px 12px;border-bottom:1px solid rgba(113,222,248,.14);background:#0a2947}.dpm-card-rail-head strong{display:block;font-size:13px}.dpm-card-rail-head span{display:block;margin-top:3px;font-size:10px;color:#92b9ca}
+#dpmCardList{padding:8px;overflow:auto;display:grid;gap:6px;align-content:start}
+.dpm-list-card{width:100%;text-align:left;border:1px solid rgba(119,207,232,.16);border-radius:9px;background:#082640;padding:8px 9px;color:#eef9ff;cursor:pointer}.dpm-list-card:hover{border-color:rgba(91,229,193,.52)}.dpm-list-card.active{border-color:#5be5c1;background:#0b3c4a;box-shadow:inset 3px 0 0 #5be5c1}
+.dpm-list-card-name{display:block;font-size:11px;line-height:1.25;font-weight:800}.dpm-list-card-meta{display:block;margin-top:3px;font-size:8px;color:#8fb9cc;text-transform:uppercase}
 .dpm-city-credit{display:none!important}
-@media(max-width:900px){#dpmCityStage{grid-template-columns:1fr!important;grid-template-rows:minmax(360px,1fr) 190px!important}.dpm-city-mapbox{grid-row:1}.dpm-card-rail{grid-row:2}#dpmCityDetails{left:22px!important;right:22px!important;bottom:218px!important;max-width:none!important}#dpmCardList{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:620px){.dpm-city-head{padding:10px 12px!important}.dpm-city-title{font-size:18px!important}#dpmCityStage{padding:8px!important;gap:8px!important;grid-template-rows:minmax(300px,1fr) 180px!important}#dpmCityDetails{left:14px!important;right:14px!important;bottom:202px!important;padding:8px 10px!important}#dpmCardList{grid-template-columns:1fr}.dpm-city-count{padding:6px 9px!important}.dpm-vpin{width:24px;height:24px;font-size:14px}.dpm-vpin-label{display:none}}
+@media(max-width:900px){#dpmCityStage{grid-template-columns:1fr!important;grid-template-rows:minmax(360px,1fr) 190px!important}#dpmCardRail{grid-row:2}#dpmCityDetails{left:20px!important;right:20px!important;bottom:215px!important;max-width:none!important}}
 </style><meta name="buxoro-residential-dpm-layout" content="${RESIDENTIAL_DPM_LAYOUT_MARKER}">`;
   html = html.includes('</head>') ? html.replace('</head>', css + '</head>') : html;
 
   const runtime = `
 /* ${RESIDENTIAL_DPM_LAYOUT_MARKER} */
-function ensureDpmCardRail(){
- const stage=document.getElementById('dpmCityStage');if(!stage)return null;let rail=document.getElementById('dpmCardRail');if(rail)return rail;
- rail=document.createElement('aside');rail.id='dpmCardRail';rail.className='dpm-card-rail';rail.setAttribute('aria-label','DPM muassasalari');
- const head=document.createElement('div');head.className='dpm-card-rail-head';const strong=document.createElement('strong');strong.textContent='DPM muassasalari';const sub=document.createElement('span');sub.textContent='Muassasani tanlash uchun kartani bosing';head.append(strong,sub);
- const list=document.createElement('div');list.id='dpmCardList';rail.append(head,list);stage.appendChild(rail);return rail;
+function ensureDpmUi(){
+ const stage=document.getElementById('dpmCityStage'),mapbox=document.querySelector('.dpm-city-mapbox');if(!stage||!mapbox)return null;
+ let schematic=document.getElementById('dpmSchematic');if(!schematic){schematic=document.createElement('div');schematic.id='dpmSchematic';const pins=document.createElement('div');pins.id='dpmPinLayer';schematic.appendChild(pins);mapbox.appendChild(schematic)}
+ let rail=document.getElementById('dpmCardRail');if(!rail){rail=document.createElement('aside');rail.id='dpmCardRail';const head=document.createElement('div');head.className='dpm-card-rail-head';head.innerHTML='<strong>DPM muassasalari</strong><span>Muassasani tanlash uchun kartani bosing</span>';const list=document.createElement('div');list.id='dpmCardList';rail.append(head,list);stage.appendChild(rail)}
+ return {schematic,rail};
 }
-function syncDpmCardSelection(name){document.querySelectorAll('.dpm-list-card,.dpm-vpin').forEach(card=>card.classList.toggle('active',card.dataset.name===name))}
-function setDpmDetails(I){const box=document.getElementById('dpmCityDetails');if(!box||!I)return;box.innerHTML='<div class="dpm-city-details-title"></div><div class="dpm-city-details-meta">DPM · Buxoro shahri</div>';box.querySelector('.dpm-city-details-title').textContent=I.name||'DPM';syncDpmCardSelection(I.name||'')}
-function renderDpmVisualPins(selectedName=''){
- const mapbox=document.querySelector('.dpm-city-mapbox');if(!mapbox)return;let layer=document.getElementById('dpmVisualPins');if(!layer){layer=document.createElement('div');layer.id='dpmVisualPins';mapbox.appendChild(layer)}layer.textContent='';
- const dpms=typeof INS!=='undefined'?INS.filter(isDpmCityInstitution):[];const cols=6,rows=Math.max(1,Math.ceil(dpms.length/cols));
- dpms.forEach((I,i)=>{const row=Math.floor(i/cols),col=i%cols;const stagger=row%2?4:0;const x=10+col*(80/Math.max(1,cols-1))+stagger;const y=13+row*(72/Math.max(1,rows-1));const pin=document.createElement('button');pin.type='button';pin.className='dpm-vpin'+(I.name===selectedName?' active':'');pin.dataset.name=I.name||'';pin.style.left=Math.min(94,x)+'%';pin.style.top=Math.min(90,y)+'%';pin.textContent='+';const lab=document.createElement('span');lab.className='dpm-vpin-label';lab.textContent=I.name||'DPM';pin.appendChild(lab);pin.addEventListener('click',()=>setDpmDetails(I));layer.appendChild(pin)});
+function dpmList(){return typeof INS!=='undefined'?INS.filter(I=>I&&(I.type==='V'||I.type==='DPM')):[]}
+function syncDpmSelection(name){document.querySelectorAll('.dpm-list-card,.dpm-map-pin').forEach(x=>x.classList.toggle('active',x.dataset.name===name))}
+function setDpmDetails(I){if(!I)return;const box=document.getElementById('dpmCityDetails');if(box){box.innerHTML='<div class="dpm-city-details-title"></div><div class="dpm-city-details-meta">DPM · Buxoro shahri</div>';box.querySelector('.dpm-city-details-title').textContent=I.name||'DPM'}syncDpmSelection(I.name||'')}
+function dpmPoint(index,total){const cols=6,rows=Math.max(1,Math.ceil(total/cols)),r=Math.floor(index/cols),c=index%cols;let x=14+c*(72/Math.max(1,cols-1));let y=16+r*(68/Math.max(1,rows-1));if(r%2)x+=3;return [Math.min(88,Math.max(12,x)),Math.min(84,Math.max(14,y))]}
+function renderCleanDpm(selectedName=''){
+ ensureDpmUi();const dpms=dpmList(),pins=document.getElementById('dpmPinLayer'),list=document.getElementById('dpmCardList'),count=document.getElementById('dpmCityCount');if(count)count.textContent=String(dpms.length);if(!pins||!list)return;pins.textContent='';list.textContent='';
+ dpms.forEach((I,i)=>{const [x,y]=dpmPoint(i,dpms.length);const pin=document.createElement('button');pin.type='button';pin.className='dpm-map-pin'+(I.name===selectedName?' active':'');pin.dataset.name=I.name||'';pin.style.left=x+'%';pin.style.top=y+'%';pin.textContent='+';const lab=document.createElement('span');lab.className='dpm-map-label';lab.textContent=I.name||'DPM';pin.appendChild(lab);pin.onclick=()=>setDpmDetails(I);pins.appendChild(pin);
+ const card=document.createElement('button');card.type='button';card.className='dpm-list-card'+(I.name===selectedName?' active':'');card.dataset.name=I.name||'';const nm=document.createElement('span');nm.className='dpm-list-card-name';nm.textContent=I.name||'DPM';const mt=document.createElement('span');mt.className='dpm-list-card-meta';mt.textContent='DPM · Buxoro shahri';card.append(nm,mt);card.onclick=()=>{setDpmDetails(I);card.scrollIntoView({block:'nearest'})};list.appendChild(card)});
+ if(selectedName){const f=dpms.find(I=>I.name===selectedName);if(f)setDpmDetails(f)}
 }
-function renderDpmCards(selectedName=''){
- const rail=ensureDpmCardRail(),list=document.getElementById('dpmCardList');if(!rail||!list)return;const dpms=typeof INS!=='undefined'?INS.filter(isDpmCityInstitution):[];list.textContent='';
- dpms.forEach(I=>{const card=document.createElement('button');card.type='button';card.className='dpm-list-card'+(I.name===selectedName?' active':'');card.dataset.name=I.name||'';const name=document.createElement('span');name.className='dpm-list-card-name';name.textContent=I.name||'DPM';const meta=document.createElement('span');meta.className='dpm-list-card-meta';meta.textContent='DPM · Buxoro shahri';card.append(name,meta);card.addEventListener('click',()=>{setDpmDetails(I);card.scrollIntoView({block:'nearest',behavior:'smooth'})});list.appendChild(card)});renderDpmVisualPins(selectedName);
-}
-if(typeof renderDpmCityMap==='function'){
- const __renderDpmCityMapClean=renderDpmCityMap;
- renderDpmCityMap=function(selectedName=''){__renderDpmCityMapClean(selectedName);renderDpmCards(selectedName);};
-}
-if(typeof showDpmCityMap==='function'){
- const __showDpmCityMapClean=showDpmCityMap;
- showDpmCityMap=function(show){const r=__showDpmCityMapClean(show);if(show)requestAnimationFrame(()=>renderDpmCards(new URLSearchParams(location.search).get('focusName')||''));return r;};
-}
+if(typeof renderDpmCityMap==='function'){const __baseRenderDpm=renderDpmCityMap;renderDpmCityMap=function(selectedName=''){try{__baseRenderDpm(selectedName)}catch{};renderCleanDpm(selectedName)}}
+if(typeof showDpmCityMap==='function'){const __baseShowDpm=showDpmCityMap;showDpmCityMap=function(show){const r=__baseShowDpm(show);if(show)setTimeout(()=>renderCleanDpm(new URLSearchParams(location.search).get('focusName')||''),0);return r}}
+setTimeout(()=>{try{if(new URLSearchParams(location.search).get('mapMode')==='dpm')renderCleanDpm(new URLSearchParams(location.search).get('focusName')||'')}catch{}},180);
 `;
   const pos = html.lastIndexOf('</script>');
   if (pos >= 0) html = html.slice(0, pos) + runtime + html.slice(pos);
