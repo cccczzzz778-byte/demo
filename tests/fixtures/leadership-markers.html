@@ -1,0 +1,30 @@
+<!doctype html><html><head></head><body><script>
+const DATA=[{n:"Buxoro shahri",c:[1,1],r:[[]]},{n:"Kogon shahri",c:[2,2],r:[[]]}];
+const VAL={};const parentH={"Buxoro shahri":2,"Kogon shahri":2},H={};const W=(x,y)=>[x,y];
+const c1=new THREE.Color(0x0b4a8f),c2=new THREE.Color(0x27d8ff),meshes=[],lbs=[],cities=[],dists=[],MT={},rings=[];
+const col=city?new THREE.Color(0x8aeeff):c1.clone().lerp(c2,(VAL[d.n]-35)/60);
+ribbon(lp,h,city?5:3.2,city?0xffffff:0x27d8ff);
+function lab(){};
+// buildings
+function safePointInPolygon(){return true}
+function buildSSBHeadquarters(){/* SSB headquarters */}
+function buildNeighbourhoodHouses(){
+ const bodies=[],roofs=[];const byName={};
+ P.filter(p=>p.I.type==="OP"||p.I.type==="OShP").forEach(p=>{
+  const wanted=p.I.type==="OP"?2:1,base=hs(p.I.name)();let made=0;
+ });
+}
+buildSSBHeadquarters();
+buildNeighbourhoodHouses();
+// flow arcs from Buxoro SHTB to every TTB/SHTB + floating dust
+let auto=true,fly=false,tgG=new THREE.Vector3(),rdG=270,phG=1;
+const pulses=[],bH=INS.find(i=>i.name==="Buxoro SHTB");
+const dust={rotation:{y:0}};
+// orbit + hover
+function render(title,list,I){}
+Lp.innerHTML=l;Rp.innerHTML=r;
+function home(){tgG.set(0,0,0);rdG=270;phG=1;fly=true;selLab.hide=true;render("Buxoro viloyati",INS)}
+function selectDist(n){const t=INS.find(x=>(x.type==="TTB"||x.type==="SHTB")&&x.dist===n)||INS.find(x=>x.dist===n);if(!t)return;selLab.hide=true;tgG.set(t.pos.x,0,t.pos.z);rdG=110;phG=.9;fly=true;render(n.endsWith("shahri")?n:n+" tumani",INS.filter(x=>x.dist===n))}
+function selectInst(I){selLab.d.textContent=I.name;selLab.v.set(I.pos.x,I.pos.y+14,I.pos.z);selLab.hide=false;tgG.set(I.pos.x,0,I.pos.z);rdG=45;phG=.8;fly=true;render(I.name,[I],I)}
+let T=0;function loop(){T+=.016;pulses.forEach(q=>{q.p.geometry.setFromPoints([q.cu.getPoint((T*.22+q.o)%1)])});dust.rotation.y+=.0002;requestAnimationFrame(loop)}loop();
+</script></body></html>
