@@ -1,5 +1,5 @@
 import postgres from 'postgres';
-import { createHash } from 'node:crypto';
+import { createHash, scryptSync, timingSafeEqual } from 'node:crypto';
 
 const realServe = Bun.serve.bind(Bun);
 const unsafeMethods = new Set(['POST','PUT','PATCH','DELETE']);
@@ -80,8 +80,22 @@ Bun.serve = function mobileCompatibleServe(options: any) {
   });
 };
 
+function legacyPasswordMatches(stored: unknown, password: string) {
+  try {
+    if (typeof stored !== 'string') return false;
+    const [version, salt, expectedHex, ...extra] = stored.split('$');
+    if (version !== 's1' || !salt || !expectedHex || extra.length) return false;
+    const expected = Buffer.from(expectedHex, 'hex');
+    if (expected.length !== 32) return false;
+    const actual = scryptSync(password, salt, 32);
+    return timingSafeEqual(actual, expected);
+  } catch {
+    return false;
+  }
+}
+
 // The base application seeds username "admin" from ADMIN_DEFAULT_PASSWORD.
-// Synchronize only that root row whenever the desired password changes.
+// Verify the root row on every startup so stale DB credentials cannot survive.
 const adminUser = 'admin';
 const adminPass = Bun.env.ADMIN_DEFAULT_PASSWORD || Bun.env.ADMIN_PASSWORD || '';
 const databaseUrl = Bun.env.DATABASE_URL || '';
@@ -96,15 +110,15 @@ if (databaseUrl && adminPass) {
       key text PRIMARY KEY,
       applied_at timestamptz NOT NULL DEFAULT now()
     )`;
-    adminSyncKey = 'admin-default-password-sync-v3:' + createHash('sha256')
+    adminSyncKey = 'admin-default-password-sync-v4:' + createHash('sha256')
       .update(adminUser + '\u0000' + adminPass)
       .digest('hex')
       .slice(0, 24);
-    const done = await adminSyncDb`SELECT 1 FROM app_runtime_migrations WHERE key=${adminSyncKey} LIMIT 1`;
-    if (!done.length) {
-      const table = await adminSyncDb`SELECT to_regclass('public.app_users')::text AS name`;
-      if (table[0]?.name) {
-        await adminSyncDb`DELETE FROM app_users WHERE username='admin'`;
+    const table = await adminSyncDb`SELECT to_regclass('public.app_users')::text AS name`;
+    if (table[0]?.name) {
+      const rows = await adminSyncDb`SELECT password_hash FROM app_users WHERE username='admin' LIMIT 1`;
+      if (!rows.length || !legacyPasswordMatches(rows[0]?.password_hash, adminPass)) {
+        if (rows.length) await adminSyncDb`DELETE FROM app_users WHERE username='admin'`;
         adminNeedsReseed = true;
       }
     }
@@ -119,7 +133,7 @@ if (adminSyncDb) {
   try {
     if (adminNeedsReseed && adminSyncKey) {
       await adminSyncDb`INSERT INTO app_runtime_migrations (key) VALUES (${adminSyncKey}) ON CONFLICT (key) DO NOTHING`;
-      console.log('ADMIN_CREDENTIALS_SYNCED_V3');
+      console.log('ADMIN_CREDENTIALS_SYNCED_V4');
     }
   } catch (e) {
     console.error('ADMIN_SYNC_FINALIZE_FAILED', e instanceof Error ? e.message : String(e));
