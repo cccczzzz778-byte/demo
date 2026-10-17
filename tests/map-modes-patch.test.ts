@@ -48,4 +48,11 @@ describe('leadership map modes + TV',()=>{
     expect(h).toContain("setMapMode(isDpmInstitution(target)?'dpm':'main',false)");
     expect(h).toContain('focusFacilityFromQuery');
   });
+
+  test('patched inline browser script remains valid JavaScript',()=>{
+    const h=patchMapModesTv(fixture);
+    const scripts=[...h.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].map(x=>x[1]);
+    expect(scripts.length).toBeGreaterThan(0);
+    for(const script of scripts)expect(()=>new Function(script)).not.toThrow();
+  });
 });
