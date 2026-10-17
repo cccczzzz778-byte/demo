@@ -4,9 +4,9 @@
   "description": "Buxoro viloyati tibbiyot bitiruvchilari — 3D dashboard va maʼlumot kiritish paneli",
   "main": "server-wrapper.js",
   "scripts": {
-    "start": "node --no-warnings normalize-hudud.js && node --no-warnings server-wrapper.js",
+    "start": "node --no-warnings normalize-hudud.js && node --no-warnings seed-medical-env.js && node --no-warnings server-wrapper.js",
     "test": "node --test normalize-hudud.test.js test/graduate-utils.test.js",
-    "check": "node --check normalize-hudud.js && node --check server-wrapper.js && node --check server.js && node --check public/login.js && node --check public/panel.js && node --check public/excel-panel.js && node --check public/excel-dashboard.js && node --check public/admin-extra.js && node --check public/dashboard-metrics.js && node --check lib/graduate-utils.js && npm test"
+    "check": "node --check normalize-hudud.js && node --check seed-medical-env.js && node --check server-wrapper.js && node --check server.js && node --check public/login.js && node --check public/panel.js && node --check public/excel-panel.js && node --check public/excel-dashboard.js && node --check public/admin-extra.js && node --check public/dashboard-metrics.js && node --check public/excel-structured-admin.js && node --check lib/graduate-utils.js && npm test"
   },
   "engines": {"node": ">=22.13"},
   "dependencies": {"express": "5.1.0"}
