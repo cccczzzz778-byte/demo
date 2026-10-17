@@ -18,7 +18,9 @@ function deriveHealthStatus(row={}){
   const explicit=norm(row.health_status);
   if(/soglom|соглом/.test(explicit))return 'Sog‘lom';
   if(/kasal|бемор|касал/.test(explicit))return 'Kasal';
-  if(norm(row.diagnosis)||norm(row.tashxis))return 'Kasal';
+  const dx=norm(row.diagnosis||row.tashxis);
+  if(/soglom|соглом/.test(dx))return 'Sog‘lom';
+  if(dx)return 'Kasal';
   return 'Aniqlanmagan';
 }
 function matchGraduateKey(row={}){
