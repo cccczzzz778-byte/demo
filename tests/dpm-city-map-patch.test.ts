@@ -3,19 +3,21 @@ import { readFileSync } from 'node:fs';
 import { patchDpmCityMap } from '../dpm-city-map-patch.ts';
 
 describe('DPM Buxoro city map separation',()=>{
-  test('dedicated patch implementation remains available for future use',()=>{
+  test('dedicated patch shows only DPMs on a larger Buxoro city map',()=>{
     const s=readFileSync(new URL('../dpm-city-map-patch.ts',import.meta.url),'utf8');
     expect(s).toContain('BUXORO_SSB_DPM_CITY_MAP_V1');
     expect(s).toContain('Buxoro shahri');
     expect(s).toContain("I.type==='V'||I.type==='DPM'");
     expect(s).toContain('dpmCityMapPanel');
     expect(s).toContain('renderDpmCityMap');
+    expect(s).toContain('distributedDpmPoint');
   });
 
-  test('restored first-view wrapper does not apply the dedicated DPM city map',()=>{
+  test('wrapper applies the dedicated DPM city map after map-mode controls',()=>{
     const wrapper=readFileSync(new URL('../district-ux-wrapper.ts',import.meta.url),'utf8');
-    expect(wrapper).not.toContain('patchDpmCityMap');
-    expect(wrapper).not.toContain('dpm-city-map-patch.ts');
+    expect(wrapper).toContain("import { patchDpmCityMap } from './dpm-city-map-patch.ts'");
+    expect(wrapper).toContain('patchDpmCityMap(');
+    expect(wrapper.indexOf('patchDpmCityMap(')).toBeGreaterThan(wrapper.indexOf('patchMapModesTv('));
   });
 
   test('patch itself stays idempotent and parseable',()=>{
