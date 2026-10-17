@@ -64,4 +64,13 @@ describe('wrapper import chain and scripts', () => {
     expect(mobile).toContain("UPDATE app_users SET password_hash=");
     expect(mobile).toContain("WHERE username=${adminUser}");
   });
+
+  test('outer wrapper enforces revocation, presence and runtime metrics using ssb_session', () => {
+    const outer=read('super-admin-wrapper.ts');
+    expect(outer).toContain('ensureMonitorSchema');
+    expect(outer).toContain('isSessionRevoked');
+    expect(outer).toContain('touchPresence');
+    expect(outer).toContain('recordHttpResult');
+    expect(outer).toContain("'ssb_session'");
+  });
 });
