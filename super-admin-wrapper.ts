@@ -1,10 +1,12 @@
 import { createHash, randomBytes, randomUUID, scryptSync } from 'node:crypto';
 import postgres from 'postgres';
 import { handleAdminApi, type AdminApiDeps } from './super-admin-api.ts';
-import { appendAdminAudit, bootstrapSuperAdmin, ensureRbacSchema, getProfile, listAdminProfiles, upsertAdminProfile } from './rbac-store.ts';
+import { appendAdminAudit, bootstrapSuperAdmin, ensureRbacSchema, getProfile, listAdminProfiles, setProfileActive, upsertAdminProfile } from './rbac-store.ts';
 import { createSessionHash, ensureMonitorSchema, getRuntimeMetrics, isSessionRevoked, listPresence, recordHttpResult, revokeSession, touchPresence } from './admin-monitor-store.ts';
 import { LegacyAdminContract, normalizeLegacyActor } from './legacy-admin-contract.ts';
 import { renderAdminShell } from './super-admin-ui.ts';
+import { enhanceAdminShell } from './super-admin-ui-actions.ts';
+import { handleAdminAccountManagement } from './admin-account-management.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 const databaseUrl = Bun.env.DATABASE_URL || '';
@@ -60,6 +62,11 @@ const deps: AdminApiDeps = {
     await db`UPDATE app_institutions SET parent_id=${parentId},updated_at=now() WHERE id=${institutionId}`;
   },
 };
+const adminMgmtDeps={
+  getProfile:deps.getProfile,
+  setProfileActive:async(username:string,active:boolean)=>{if(!db)throw new Error('DATABASE_UNAVAILABLE');await setProfileActive(db as any,username,active)},
+  appendAudit:deps.appendAudit,
+};
 
 function isDirectLegacyUserManagement(pathname: string) { return /^\/api\/v1\/(?:admin|region)\/users(?:\/|$)/.test(pathname); }
 function sessionToken(request: Request) {
@@ -82,8 +89,8 @@ async function maybeTouchPresence(request: Request, innerFetch: (request:Request
   const now=Date.now(), last=presenceThrottle.get(hash)||0; if(now-last<60_000) return;
   const me=await innerFetch(requestWithSession(request,LegacyAdminContract.me)); if(!me.ok)return;
   let payload:unknown; try{payload=await me.json()}catch{return}; const actor=normalizeLegacyActor(payload); if(!actor)return;
-  const profile=await getProfile(db as any,actor.username); if(!profile)return;
-  await touchPresence(db as any,{username:profile.username,role:profile.role},{sessionHash:hash,ipHash:ipHash(request),userAgent:request.headers.get('user-agent'),district:profile.districtId||actor.scope||null});
+  const profile=await getProfile(db as any,actor.username);
+  await touchPresence(db as any,{username:profile?.username||actor.username,role:profile?.role||actor.role},{sessionHash:hash,ipHash:ipHash(request),userAgent:request.headers.get('user-agent'),district:profile?.districtId||actor.scope||null});
   presenceThrottle.set(hash,now);
 }
 function cspNonce(headers:Headers,body:string){
@@ -94,7 +101,8 @@ async function maybeReplaceAdminPage(request:Request,response:Response,innerFetc
   const profile=await resolveProfileForRequest(request,innerFetch);if(!profile||!['SUPER_ADMIN','ADMIN','CONTROL_ADMIN'].includes(profile.role))return response;
   const original=await response.text();const nonce=cspNonce(response.headers,original);if(!nonce)return new Response('Security nonce unavailable',{status:500});
   const headers=new Headers(response.headers);headers.delete('content-length');headers.set('cache-control','no-store');
-  return new Response(renderAdminShell(profile).replaceAll('__CSP_NONCE__',nonce),{status:response.status,statusText:response.statusText,headers});
+  const shell=enhanceAdminShell(renderAdminShell(profile),profile);
+  return new Response(shell.replaceAll('__CSP_NONCE__',nonce),{status:response.status,statusText:response.statusText,headers});
 }
 
 Bun.serve = function superAdminServe(options: any) {
@@ -110,7 +118,7 @@ Bun.serve = function superAdminServe(options: any) {
           response=new Response(JSON.stringify({error:'Session revoked'}),{status:401,headers:{'content-type':'application/json; charset=utf-8','set-cookie':'ssb_session=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0','cache-control':'no-store'}});
         } else if (pathname.startsWith('/api/control/')) {
           if (!db) response=new Response(JSON.stringify({ error: 'Database unavailable' }), { status: 503, headers: { 'content-type': 'application/json' } });
-          else response=(await handleAdminApi(request, innerFetch, deps)) || new Response(JSON.stringify({error:'Not found'}),{status:404});
+          else response=(await handleAdminAccountManagement(request,innerFetch,adminMgmtDeps)) || (await handleAdminApi(request, innerFetch, deps)) || new Response(JSON.stringify({error:'Not found'}),{status:404});
         } else if (isDirectLegacyUserManagement(pathname)) {
           response=new Response(JSON.stringify({ error: 'Use scoped control API' }), { status: 403, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
         } else {
