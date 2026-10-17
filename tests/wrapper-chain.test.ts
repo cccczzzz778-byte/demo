@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
-import { createSecurityGateRequest, withSecurityHeaders } from '../super-admin-wrapper-core';
-import { isAdminManagedRequest } from '../super-admin-api';
+import { createSecurityGateRequest, isAdminManagedRequest, withSecurityHeaders } from '../super-admin-wrapper-core';
 
 const read = (p:string) => readFileSync(new URL('../'+p, import.meta.url),'utf8');
 
@@ -57,5 +56,11 @@ describe('wrapper import chain and scripts', () => {
     expect(pkg.scripts.test).toBe('bun test');
     expect(pkg.packageManager).toBe('bun@1.2.23');
     expect(pkg.dependencies.postgres).toBe('^3.4.7');
+  });
+
+  test('admin password reseed never deletes assigned ordinary/control admins', () => {
+    const mobile=read('mobile-wrapper.ts');
+    expect(mobile).toContain("DELETE FROM app_users WHERE username='admin'");
+    expect(mobile).not.toContain("OR upper(role::text)='ADMIN'");
   });
 });
