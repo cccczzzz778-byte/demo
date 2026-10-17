@@ -1,4 +1,4 @@
-export const PERF_MARKER='BUXORO_SSB_3D_PERF_V1';
+export const PERF_MARKER='BUXORO_SSB_3D_PERF_V2';
 
 export function patch3dPerformanceAndFacilityFocus(input:string):string{
   if(!input||input.includes(PERF_MARKER))return input;
@@ -15,7 +15,8 @@ export function patch3dPerformanceAndFacilityFocus(input:string):string{
   if(typeof sc!=='undefined'&&sc&&typeof sc.traverse==='function'){
    const gone=[];sc.traverse(o=>{const u=o&&o.userData||{};if(u.kind==='flow'||u.level==='facility-to-district'||u.level==='district-to-ssb')gone.push(o)});gone.forEach(o=>{try{if(o.parent)o.parent.remove(o)}catch{}});
   }
-  if(typeof neighbourhoodObjects!=='undefined')neighbourhoodObjects.forEach(o=>{if(o&&o.isInstancedMesh&&typeof o.count==='number')o.count=Math.min(o.count,o.userData&&o.userData.center?4:2)});
+  // Keep all requested residential models: 10 per OP/OShP/TTB/MP(KTMP)/SHTB.
+  if(typeof neighbourhoodObjects!=='undefined')neighbourhoodObjects.forEach(o=>{if(o&&o.isInstancedMesh&&typeof o.count==='number')o.count=Math.min(o.count,10)});
  }catch(e){console.warn('3D_FLOW_REMOVE_FAILED',e&&e.message||e)}
 }
 function focusFacilityFromQuery(){
