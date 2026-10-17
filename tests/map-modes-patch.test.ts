@@ -26,17 +26,20 @@ describe('leadership map modes + TV',()=>{
     expect(h).toContain("mode==='main'?MAIN_TYPES.has(I.type):isDpmInstitution(I)");
   });
 
-  test('DPM mode distributes DPM markers while final composition keeps user camera free',()=>{
+  test('DPM mode distributes DPM markers while map-mode switching never forces a camera center',()=>{
     const h=patchFreeMapCamera(patchMapModesTv(fixture));
     expect(h).toContain('function repositionDpmAcrossBukhara');
     expect(h).toContain('Buxoro shahri');
     expect(h).toContain('Math.sqrt(i+1)');
-    expect(h).not.toContain('rdG=72');
-    expect(h).not.toContain('phG=.82');
-    expect(h).not.toContain('tgG.set(w[0],0,w[1])');
-    expect(h).not.toContain('tgG.set(0,0,0)');
-    expect(h).toContain("if(typeof auto!=='undefined')auto=false");
-    expect(h).toContain("if(typeof fly!=='undefined')fly=false");
+    const start=h.indexOf('function setMapMode('),end=h.indexOf('async function toggleTvMode',start),block=h.slice(start,end);
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    expect(block).not.toContain('rdG=72');
+    expect(block).not.toContain('phG=.82');
+    expect(block).not.toContain('tgG.set');
+    expect(block).not.toContain('tg.set');
+    expect(block).toContain("if(typeof auto!=='undefined')auto=false");
+    expect(block).toContain("if(typeof fly!=='undefined')fly=false");
   });
 
   test('disables hierarchical flow construction and animation before page runtime',()=>{
