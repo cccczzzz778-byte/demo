@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { patchDpmCityMap } from '../dpm-city-map-patch.ts';
 
 describe('DPM Buxoro city map separation',()=>{
-  test('dedicated patch renders only DPMs on a Buxoro shahri city map',()=>{
+  test('dedicated patch implementation remains available for future use',()=>{
     const s=readFileSync(new URL('../dpm-city-map-patch.ts',import.meta.url),'utf8');
     expect(s).toContain('BUXORO_SSB_DPM_CITY_MAP_V1');
     expect(s).toContain('Buxoro shahri');
@@ -12,15 +12,13 @@ describe('DPM Buxoro city map separation',()=>{
     expect(s).toContain('renderDpmCityMap');
   });
 
-  test('main TTB/SHTB map excludes DPM and wrapper applies city map after map modes',()=>{
-    const modes=readFileSync(new URL('../leadership-map-modes-patch.ts',import.meta.url),'utf8');
+  test('restored first-view wrapper does not apply the dedicated DPM city map',()=>{
     const wrapper=readFileSync(new URL('../district-ux-wrapper.ts',import.meta.url),'utf8');
-    expect(modes).toContain("const MAIN_TYPES=new Set(['TTB','SHTB','OP','OShP'])");
-    expect(wrapper).toContain("import { patchDpmCityMap } from './dpm-city-map-patch.ts';");
-    expect(wrapper).toContain('patchDpmCityMap(');
+    expect(wrapper).not.toContain('patchDpmCityMap');
+    expect(wrapper).not.toContain('dpm-city-map-patch.ts');
   });
 
-  test('patch is idempotent and injected browser script parses',()=>{
+  test('patch itself stays idempotent and parseable',()=>{
     const base='<!doctype html><html><head></head><body><script nonce="abc">function setMapMode(){};const INS=[];</script></body></html>';
     const once=patchDpmCityMap(base),twice=patchDpmCityMap(once);
     expect(twice).toBe(once);
