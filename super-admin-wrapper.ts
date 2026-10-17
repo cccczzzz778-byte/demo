@@ -4,6 +4,7 @@ import { handleAdminApi, type AdminApiDeps } from './super-admin-api.ts';
 import { appendAdminAudit, bootstrapSuperAdmin, ensureRbacSchema, getProfile, listAdminProfiles, upsertAdminProfile } from './rbac-store.ts';
 import { createSessionHash, ensureMonitorSchema, getRuntimeMetrics, isSessionRevoked, listPresence, recordHttpResult, revokeSession, touchPresence } from './admin-monitor-store.ts';
 import { LegacyAdminContract, normalizeLegacyActor } from './legacy-admin-contract.ts';
+import { renderAdminShell } from './super-admin-ui.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 const databaseUrl = Bun.env.DATABASE_URL || '';
@@ -54,7 +55,7 @@ const deps: AdminApiDeps = {
     let dbOk=false;if(db){try{await db`SELECT 1`;dbOk=true}catch{}}
     return {app:true,db:dbOk,deploymentId:Bun.env.RAILWAY_DEPLOYMENT_ID||null,...getRuntimeMetrics()};
   },
-  updateHierarchy: async ({institutionId,parentId},profile) => {
+  updateHierarchy: async ({institutionId,parentId}) => {
     if(!db)throw new Error('DATABASE_UNAVAILABLE');
     await db`UPDATE app_institutions SET parent_id=${parentId},updated_at=now() WHERE id=${institutionId}`;
   },
@@ -70,16 +71,30 @@ function ipHash(request: Request) {
   const ip=(request.headers.get('x-forwarded-for')||'').split(',')[0].trim();
   return ip?createHash('sha256').update(ip).digest('hex'):null;
 }
+function requestWithSession(request:Request,path:string){
+  const url=new URL(request.url);url.pathname=path;url.search='';const h=new Headers();const cookie=request.headers.get('cookie');if(cookie)h.set('cookie',cookie);return new Request(url,{headers:h});
+}
+async function resolveProfileForRequest(request:Request,innerFetch:(request:Request)=>Promise<Response>){
+  if(!db)return null;const me=await innerFetch(requestWithSession(request,LegacyAdminContract.me));if(!me.ok)return null;let data:unknown;try{data=await me.json()}catch{return null};const actor=normalizeLegacyActor(data);if(!actor)return null;return getProfile(db as any,actor.username);
+}
 async function maybeTouchPresence(request: Request, innerFetch: (request:Request)=>Promise<Response>, hash:string) {
   if(!db || !hash) return;
   const now=Date.now(), last=presenceThrottle.get(hash)||0; if(now-last<60_000) return;
-  const url=new URL(request.url); url.pathname=LegacyAdminContract.me; url.search='';
-  const h=new Headers(); const cookie=request.headers.get('cookie'); if(cookie)h.set('cookie',cookie);
-  const me=await innerFetch(new Request(url,{headers:h})); if(!me.ok)return;
+  const me=await innerFetch(requestWithSession(request,LegacyAdminContract.me)); if(!me.ok)return;
   let payload:unknown; try{payload=await me.json()}catch{return}; const actor=normalizeLegacyActor(payload); if(!actor)return;
   const profile=await getProfile(db as any,actor.username); if(!profile)return;
   await touchPresence(db as any,{username:profile.username,role:profile.role},{sessionHash:hash,ipHash:ipHash(request),userAgent:request.headers.get('user-agent'),district:profile.districtId||actor.scope||null});
   presenceThrottle.set(hash,now);
+}
+function cspNonce(headers:Headers,body:string){
+  const csp=headers.get('content-security-policy')||'';return csp.match(/'nonce-([^']+)'/)?.[1]||body.match(/nonce=["']([^"']+)["']/)?.[1]||'';
+}
+async function maybeReplaceAdminPage(request:Request,response:Response,innerFetch:(request:Request)=>Promise<Response>){
+  if(new URL(request.url).pathname!=='/admin'||response.status!==200||(response.headers.get('content-type')||'').indexOf('text/html')<0)return response;
+  const profile=await resolveProfileForRequest(request,innerFetch);if(!profile||!['SUPER_ADMIN','ADMIN','CONTROL_ADMIN'].includes(profile.role))return response;
+  const original=await response.text();const nonce=cspNonce(response.headers,original);if(!nonce)return new Response('Security nonce unavailable',{status:500});
+  const headers=new Headers(response.headers);headers.delete('content-length');headers.set('cache-control','no-store');
+  return new Response(renderAdminShell(profile).replaceAll('__CSP_NONCE__',nonce),{status:response.status,statusText:response.statusText,headers});
 }
 
 Bun.serve = function superAdminServe(options: any) {
@@ -98,7 +113,10 @@ Bun.serve = function superAdminServe(options: any) {
           else response=(await handleAdminApi(request, innerFetch, deps)) || new Response(JSON.stringify({error:'Not found'}),{status:404});
         } else if (isDirectLegacyUserManagement(pathname)) {
           response=new Response(JSON.stringify({ error: 'Use scoped control API' }), { status: 403, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
-        } else response=await innerFetch(request, server);
+        } else {
+          response=await innerFetch(request, server);
+          response=await maybeReplaceAdminPage(request,response,innerFetch);
+        }
         if(hash && response.status<500) void maybeTouchPresence(request,innerFetch,hash).catch(()=>{});
       } catch(e) {
         console.error('SUPER_ADMIN_WRAPPER_ERROR',e instanceof Error?e.message:String(e));
