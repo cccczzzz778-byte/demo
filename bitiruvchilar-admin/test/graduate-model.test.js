@@ -15,6 +15,8 @@ test('normalizes OTM variants and preserves other education levels',()=>{
 
 test('derives health only from explicit health or diagnosis',()=>{
   assert.equal(deriveHealthStatus({health_status:'Sog‘lom',diagnosis:''}),'Sog‘lom');
+  assert.equal(deriveHealthStatus({health_status:'',diagnosis:"Sog'lom"}),'Sog‘lom');
+  assert.equal(deriveHealthStatus({health_status:'',diagnosis:'Соғлом'}),'Sog‘lom');
   assert.equal(deriveHealthStatus({health_status:'',diagnosis:'Anemiya'}),'Kasal');
   assert.equal(deriveHealthStatus({health_status:'',diagnosis:''}),'Aniqlanmagan');
 });
