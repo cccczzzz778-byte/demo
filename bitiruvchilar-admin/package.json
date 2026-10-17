@@ -6,7 +6,7 @@
   "scripts": {
     "start": "npm run check && node --no-warnings backup-db-env.js && node --no-warnings rebuild-real-data-env.js && node --no-warnings canonical-server.js",
     "test": "node --test normalize-hudud.test.js test/*.test.js",
-    "check": "node --check canonical-server.js && node --check server.js && node --check backup-db-env.js && node --check rebuild-real-data-env.js && node --check public/login.js && node --check public/excel-panel.js && node --check public/dashboard-metrics.js && node --check public/dashboard-summary.js && node --check lib/graduate-utils.js && node --check lib/graduate-model.js && node --check lib/graduate-db.js && node --check lib/import-graduates.js && node --check lib/graduate-service.js && node --check lib/dashboard-summary.js && node --check lib/run-real-rebuild.js && npm test"
+    "check": "node --check canonical-server.js && node --check server.js && node --check backup-db-env.js && node --check rebuild-real-data-env.js && node --check public/login.js && node --check public/excel-panel.js && node --check public/dashboard-metrics.js && node --check public/dashboard-summary.js && node --check lib/graduate-utils.js && node --check lib/graduate-model.js && node --check lib/graduate-db.js && node --check lib/import-graduates.js && node --check lib/graduate-service.js && node --check lib/dashboard-summary.js && node --check lib/source-aggregates.js && node --check lib/run-real-rebuild.js && npm test"
   },
   "engines": {"node": ">=22.13"},
   "dependencies": {"express": "5.1.0"}
