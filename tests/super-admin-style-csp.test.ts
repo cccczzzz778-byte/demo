@@ -1,9 +1,11 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
+import { enhanceAdminShell } from '../super-admin-ui-actions.ts';
 
 describe('Super Admin CSP styling',()=>{
-  test('inline admin style uses the runtime CSP nonce placeholder',()=>{
-    const s=readFileSync(new URL('../super-admin-ui.ts',import.meta.url),'utf8');
-    expect(s).toContain('<style nonce="__CSP_NONCE__">');
+  test('runtime enhancer adds the CSP nonce placeholder to inline admin styles',()=>{
+    const html=enhanceAdminShell('<html><head><style>body{}</style></head><body></body></html>',{
+      username:'admin',role:'SUPER_ADMIN',scopeType:'province',districtId:null,controlMode:null,active:true
+    } as any);
+    expect(html).toContain('<style nonce="__CSP_NONCE__">');
   });
 });
