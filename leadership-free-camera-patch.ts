@@ -3,6 +3,14 @@ export const FREE_CAMERA_MARKER='BUXORO_SSB_FREE_CAMERA_V1';
 export function patchFreeMapCamera(input:string):string{
   if(!input||input.includes(FREE_CAMERA_MARKER)||!input.includes('</script>'))return input;
   let html=input;
+
+  // Map mode changes must never force the camera back to Buxoro city or (0,0,0).
+  // The user keeps the exact target / zoom they chose while switching layers.
+  html=html.replace(
+    / if\(mode==='dpm'\)\{\n  const city=[\s\S]*?\n \}else\{[^\n]*\}\n if\(updateUrl\)/,
+    " if(typeof auto!=='undefined')auto=false;\n if(typeof fly!=='undefined')fly=false;\n if(updateUrl)"
+  );
+
   const runtime=`
 /* ${FREE_CAMERA_MARKER} */
 function freeStopAuto(){
