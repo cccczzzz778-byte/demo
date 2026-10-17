@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3D Dashboard · Bitiruvchilar 2026</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=Unbounded:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="/dashboard.css">
+</head>
+<body>
+<main class="dash" id="dash">
+  <header class="dash-head">
+    <div class="brand"><div class="mark">✚</div><div><h1>Buxoro viloyati tibbiyot bitiruvchilari</h1><p>2026-yil · 11 tuman va 2 shahar kesimida</p></div></div>
+    <div class="head-actions"><span class="live">LIVE</span><button id="resetView" class="btn" type="button">Ko‘rinishni tiklash</button></div>
+  </header>
+
+  <section class="layout">
+    <aside class="side left">
+      <article class="panel hero"><span>Viloyat bo‘yicha jami</span><strong id="kJami">0</strong><small>bitiruvchi</small></article>
+      <div class="kgrid">
+        <article class="panel k"><span>Oliy</span><strong id="kOliy">0</strong></article>
+        <article class="panel k"><span>O‘rta tibbiy</span><strong id="kTex">0</strong></article>
+        <article class="panel k"><span>Ishga joylashgan</span><strong id="kIshda">0</strong></article>
+        <article class="panel k"><span>Ishsiz</span><strong id="kIshsiz">0</strong></article>
+      </div>
+      <article class="panel"><div class="panel-title">Bandlik darajasi <b id="employmentPct">0%</b></div><div class="track"><i id="employmentBar"></i></div></article>
+      <article class="panel"><div class="panel-title">Bo‘sh shtat <b id="kShtat">0</b></div><p class="muted">Hududlar bo‘yicha kiritilgan bo‘sh ish o‘rinlari yig‘indisi.</p></article>
+    </aside>
+
+    <section class="map-card">
+      <div class="map-top"><div><b>3D Buxoro xaritasi</b><span>Hududni tanlash uchun bosing · aylantirish uchun torting · zoom uchun g‘ildirak</span></div><div class="legend"><i></i><span>yuqori ko‘rsatkich</span></div></div>
+      <div class="scene" id="scene">
+        <div class="map3d" id="map3d"><svg id="map" viewBox="340 325 210 215" role="img" aria-label="Buxoro viloyati hududlari 3D xaritasi"></svg></div>
+        <div class="hint" id="hint">Hududni tanlang</div>
+      </div>
+      <div class="map-foot"><span id="updated">Ma’lumot yuklanmoqda…</span><span>Xarita konturlari yuborilgan 3D maketdan olindi</span></div>
+    </section>
+
+    <aside class="side right">
+      <article class="panel selected">
+        <div class="panel-title">Tanlangan hudud</div>
+        <h2 id="sName">—</h2>
+        <div class="sgrid">
+          <div><span>Jami</span><b id="sJami">0</b></div><div><span>Oliy</span><b id="sOliy">0</b></div>
+          <div><span>O‘rta tibbiy</span><b id="sTex">0</b></div><div><span>Ishga joylashgan</span><b id="sIshda">0</b></div>
+          <div><span>O‘z hududida</span><b id="sOz">0</b></div><div><span>Ishsiz</span><b id="sIshsiz">0</b></div>
+          <div class="wide"><span>Bo‘sh shtat</span><b id="sShtat">0</b></div>
+        </div>
+      </article>
+      <article class="panel rank"><div class="panel-title">Hududlar reytingi <span>Ishga joylashish</span></div><div id="ranking"></div></article>
+    </aside>
+  </section>
+</main>
+<script src="/dashboard.js"></script>
+</body>
+</html>
