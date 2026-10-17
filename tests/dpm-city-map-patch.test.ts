@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
+import { patchDpmCityMap } from '../dpm-city-map-patch.ts';
 
 describe('DPM Buxoro city map separation',()=>{
   test('dedicated patch renders only DPMs on a Buxoro shahri city map',()=>{
@@ -17,5 +18,15 @@ describe('DPM Buxoro city map separation',()=>{
     expect(modes).toContain("const MAIN_TYPES=new Set(['TTB','SHTB','OP','OShP'])");
     expect(wrapper).toContain("import { patchDpmCityMap } from './dpm-city-map-patch.ts';");
     expect(wrapper).toContain('patchDpmCityMap(');
+  });
+
+  test('patch is idempotent and injected browser script parses',()=>{
+    const base='<!doctype html><html><head></head><body><script nonce="abc">function setMapMode(){};const INS=[];</script></body></html>';
+    const once=patchDpmCityMap(base),twice=patchDpmCityMap(once);
+    expect(twice).toBe(once);
+    expect((once.match(/BUXORO_SSB_DPM_CITY_MAP_V1/g)||[]).length).toBeGreaterThan(0);
+    const scripts=[...once.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].map(m=>m[1]);
+    expect(scripts.length).toBeGreaterThan(0);
+    scripts.forEach(code=>expect(()=>new Function(code)).not.toThrow());
   });
 });
