@@ -1,5 +1,6 @@
 import { patchMapPrerequisites } from './map-prerequisites-patch.ts';
 import { patchInstitutionScope } from './institution-scope-patch.ts';
+import { patchDistrictDrilldown3d } from './district-drilldown-patch.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
@@ -36,7 +37,8 @@ Bun.serve = function districtUxServe(options: any) {
           if (pathname === '/leadership' || pathname === '/map') {
             const source = await response.text();
             const prepared = pathname === '/map' ? patchMapPrerequisites(source) : source;
-            const finalHtml = patchInstitutionScope(prepared);
+            const scopedHtml = patchInstitutionScope(prepared);
+            const finalHtml = patchDistrictDrilldown3d(scopedHtml);
             const headers = allowScoped3dEmbedding(new Headers(response.headers), pathname);
             headers.delete('content-length');
             headers.set('cache-control', 'no-store');
