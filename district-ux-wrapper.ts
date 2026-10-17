@@ -11,6 +11,7 @@ const nativeServe = Bun.serve.bind(Bun);
 function renderUploadedLeadership() {
   const nonce = randomBytes(16).toString('base64');
   const html = patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
+    .replace(/BUXORO VILOYATI TIBBIYOT MUASSASALARI/g, 'Buxoro viloyati SSB Dashboardi')
     .replace(/<style(?![^>]*\bnonce=)/g, `<style nonce="${nonce}"`)
     .replace(/<script(?![^>]*\bnonce=)/g, `<script nonce="${nonce}"`);
   const headers = new Headers({
