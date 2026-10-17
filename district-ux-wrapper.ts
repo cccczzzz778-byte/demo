@@ -70,4 +70,4 @@ Bun.serve = function districtUxServe(options: any) {
   });
 };
 
-await import('./mobile-wrapper.ts');
+await import('./safe-mobile-wrapper.ts');
