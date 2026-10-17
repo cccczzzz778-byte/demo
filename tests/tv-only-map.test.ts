@@ -1,25 +1,23 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 
-describe('first map view with TV only',()=>{
-  test('wrapper keeps old 3D scene and drops later map-mode/reposition patches',()=>{
+describe('map toolbar TV mode',()=>{
+  test('wrapper uses the combined map-mode toolbar and keeps unstable camera/recenter patches disabled',()=>{
     const s=readFileSync(new URL('../district-ux-wrapper.ts',import.meta.url),'utf8');
-    expect(s).toContain("patchTvOnly");
-    expect(s).not.toContain("patchMapModesTv");
-    expect(s).not.toContain("patchDpmCityMap");
-    expect(s).not.toContain("patchTtbKtmpCenter");
-    expect(s).not.toContain("patchFreeMapCamera");
+    expect(s).toContain('patchMapModesTv');
+    expect(s).toContain('patchDpmCityMap');
+    expect(s).not.toContain('patchTvOnly');
+    expect(s).not.toContain('patchTtbKtmpCenter');
+    expect(s).not.toContain('patchFreeMapCamera');
   });
 
-  test('TV patch only adds fullscreen control and does not change map institutions or camera',()=>{
-    const s=readFileSync(new URL('../leadership-tv-only-patch.ts',import.meta.url),'utf8');
+  test('combined map toolbar owns fullscreen control and the two requested map modes',()=>{
+    const s=readFileSync(new URL('../leadership-map-modes-patch.ts',import.meta.url),'utf8');
     expect(s).toContain('requestFullscreen');
     expect(s).toContain('exitFullscreen');
     expect(s).toContain('TV rejim');
-    expect(s).not.toContain('setMapMode');
-    expect(s).not.toContain('MAIN_TYPES');
-    expect(s).not.toContain('repositionDpm');
-    expect(s).not.toContain('rdG=');
-    expect(s).not.toContain('tgG.set');
+    expect(s).toContain('TTB / SHTB / OP / OShP xaritasi');
+    expect(s).toContain('DPM xaritasi');
+    expect(s).toContain("const MAIN_TYPES=new Set(['TTB','SHTB','OP','OShP'])");
   });
 });
