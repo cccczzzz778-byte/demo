@@ -10,7 +10,7 @@ function buildDashboardSummary(db,hudud=''){
  let medicalEducation=a.medicalEducation;
  if(tableExists(db,'medical_graduates')){
   const mrows=filter?db.prepare('SELECT education_level FROM medical_graduates WHERE hudud=?').all(filter):db.prepare('SELECT education_level FROM medical_graduates').all();
-  medicalEducation={total:mrows.length,otm:mrows.filter(x=>x.education_level==='OTM').length,technical:mrows.filter(x=>x.education_level==='Texnikum').length};
+  if(mrows.length)medicalEducation={total:mrows.length,otm:mrows.filter(x=>x.education_level==='OTM').length,technical:mrows.filter(x=>x.education_level==='Texnikum').length};
  }
  return {hudud:filter||'Buxoro viloyati',total:a.total,higher:a.higher,nonHigher:a.nonHigher,working:a.working,unemployed:a.unemployed,examined:a.examined,healthy:a.healthy,sick:a.sick,medicalEducation,diagnoses:[...diag.entries()].map(([name,count])=>({name,count})).sort((x,y)=>y.count-x.count||x.name.localeCompare(y.name))};
 }
