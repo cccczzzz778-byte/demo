@@ -4,6 +4,7 @@ import { patchLeadershipRuntimeFix } from './leadership-3d-runtime-fix.ts';
 import { patch3dPerformanceAndFacilityFocus } from './leadership-performance-patch.ts';
 import { patchMapModesTv } from './leadership-map-modes-patch.ts';
 import { patchTtbKtmpCenter } from './ttb-ktmp-center-patch.ts';
+import { patchFreeMapCamera } from './leadership-free-camera-patch.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
@@ -23,7 +24,8 @@ Bun.serve = function districtUxServe(options: any) {
           const redesigned = patchLeadershipRuntimeFix(patchLeadership3d(prepared));
           const patched = patch3dPerformanceAndFacilityFocus(redesigned);
           const modeHtml = patchMapModesTv(patched);
-          const finalHtml = patchTtbKtmpCenter(modeHtml);
+          const centeredHtml = patchTtbKtmpCenter(modeHtml);
+          const finalHtml = patchFreeMapCamera(centeredHtml);
           const headers = new Headers(response.headers);
           headers.delete('content-length');
           headers.set('cache-control', 'no-store');
