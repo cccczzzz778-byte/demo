@@ -3,13 +3,14 @@ import { patchMapPrerequisites } from './map-prerequisites-patch.ts';
 import { patchInstitutionScope } from './institution-scope-patch.ts';
 import { patchDistrictDrilldown3d } from './district-drilldown-patch.ts';
 import { patchProvinceMarkerHardening } from './province-marker-hardening-patch.ts';
+import { patchLeadershipDistrictSwitch } from './leadership-district-switch-patch.ts';
 import { UPLOADED_LEADERSHIP_HTML } from './leadership-uploaded-source.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
 function renderUploadedLeadership() {
   const nonce = randomBytes(16).toString('base64');
-  const html = UPLOADED_LEADERSHIP_HTML
+  const html = patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
     .replace(/<style(?![^>]*\bnonce=)/g, `<style nonce="${nonce}"`)
     .replace(/<script(?![^>]*\bnonce=)/g, `<script nonce="${nonce}"`);
   const headers = new Headers({
