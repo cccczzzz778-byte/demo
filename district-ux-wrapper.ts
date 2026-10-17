@@ -2,10 +2,7 @@ import { patchLeadership3d } from './leadership-3d-patch.ts';
 import { patchMapPrerequisites } from './map-prerequisites-patch.ts';
 import { patchLeadershipRuntimeFix } from './leadership-3d-runtime-fix.ts';
 import { patch3dPerformanceAndFacilityFocus } from './leadership-performance-patch.ts';
-import { patchMapModesTv } from './leadership-map-modes-patch.ts';
-import { patchDpmCityMap } from './dpm-city-map-patch.ts';
-import { patchTtbKtmpCenter } from './ttb-ktmp-center-patch.ts';
-import { patchFreeMapCamera } from './leadership-free-camera-patch.ts';
+import { patchTvOnly } from './leadership-tv-only-patch.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
@@ -23,11 +20,8 @@ Bun.serve = function districtUxServe(options: any) {
           const source = await response.text();
           const prepared = pathname === '/map' ? patchMapPrerequisites(source) : source;
           const redesigned = patchLeadershipRuntimeFix(patchLeadership3d(prepared));
-          const patched = patch3dPerformanceAndFacilityFocus(redesigned);
-          const modeHtml = patchMapModesTv(patched);
-          const centeredHtml = patchTtbKtmpCenter(modeHtml);
-          const freeHtml = patchFreeMapCamera(centeredHtml);
-          const finalHtml = patchDpmCityMap(freeHtml);
+          const optimized = patch3dPerformanceAndFacilityFocus(redesigned);
+          const finalHtml = patchTvOnly(optimized);
           const headers = new Headers(response.headers);
           headers.delete('content-length');
           headers.set('cache-control', 'no-store');
