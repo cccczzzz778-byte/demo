@@ -22,8 +22,9 @@ describe('free 3D map camera',()=>{
   test('free zoom is clamped and pan updates the live target instead of snapping to a fixed center',()=>{
     const h=patchFreeMapCamera(fixture);
     expect(h).toContain('Math.max(12,Math.min(560');
-    expect(h).toContain('tgG.x');
-    expect(h).toContain('tgG.z');
+    expect(h).toContain('target.x');
+    expect(h).toContain('target.z');
+    expect(h).toContain('const target=freeCameraTarget()');
     expect(h).not.toContain('FREE_CAMERA_FIXED_CENTER');
   });
 
