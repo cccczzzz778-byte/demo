@@ -4,8 +4,9 @@
   "description": "Buxoro viloyati tibbiyot bitiruvchilari — 3D dashboard va maʼlumot kiritish paneli",
   "main": "server-wrapper.js",
   "scripts": {
-    "start": "node --no-warnings server-wrapper.js",
-    "check": "node --check server-wrapper.js && node --check server.js && node --check public/login.js && node --check public/panel.js"
+    "start": "node --no-warnings normalize-hudud.js && node --no-warnings server-wrapper.js",
+    "test": "node --test normalize-hudud.test.js",
+    "check": "node --check normalize-hudud.js && node --test normalize-hudud.test.js && node --check server-wrapper.js && node --check server.js && node --check public/login.js && node --check public/panel.js && node --check public/excel-panel.js && node --check public/excel-dashboard.js"
   },
   "engines": {
     "node": ">=22.13"
