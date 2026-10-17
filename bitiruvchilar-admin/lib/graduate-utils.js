@@ -12,7 +12,7 @@ const DISTRICTS=[
   [['qorovulbozor','коровулбозор'],'Қоровулбозор тумани'],
   [['olot','олот'],'Олот тумани'],
   [['peshku','пешку'],'Пешку тумани'],
-  [['romitan','ромитан'],'Ромитан тумани'],
+  [['romitan','rometan','ромитан','рометан'],'Ромитан тумани'],
   [['shofirkon','шофиркон'],'Шофиркон тумани']
 ];
 function canonicalHudud(value){const n=norm(value);for(const [aliases,out] of DISTRICTS){if(aliases.some(a=>n.includes(norm(a))))return out}return String(value??'').trim()}
