@@ -1,10 +1,22 @@
 import type { AccessProfile } from './rbac.ts';
 
 export function enhanceAdminShell(input:string,profile:AccessProfile):string{
-  const styled=input.replace('<style>','<style nonce="__CSP_NONCE__">');
+  let styled=input.replace('<style>','<style nonce="__CSP_NONCE__">');
+  styled=styled.replace('</head>',`<style nonce="__CSP_NONCE__" data-facility-preview-3d="1">
+.previewbox{width:min(1180px,96vw);max-height:94vh;overflow:auto}.facility3d{width:100%;height:72vh;border:0;border-radius:10px;background:#061126}
+</style></head>`);
   const isSuper=profile.role==='SUPER_ADMIN';
   const canWrite=isSuper||profile.role==='ADMIN'||(profile.role==='CONTROL_ADMIN'&&profile.controlMode==='active');
-  if(!canWrite)return styled;
+  const previewScript=`<script nonce="__CSP_NONCE__" data-facility-preview-3d="1">
+preview=function(id){
+ const x=state.institutions.find(i=>i.id===id);if(!x)return;
+ $('#previewTitle').textContent=x.name;
+ const src='/map?focusName='+encodeURIComponent(x.name);
+ $('#previewBody').innerHTML='<iframe class="map facility3d" loading="eager" src="'+src+'" title="'+accountEsc(x.name)+' 3D"></iframe>';
+ $('#preview').classList.add('open');
+};
+</script>`;
+  if(!canWrite)return styled.replace('</body>',previewScript+'</body>');
   const script=`<script nonce="__CSP_NONCE__" data-account-actions="1">
 const accountEsc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 ${isSuper?`loadAdmins=async function(){
@@ -20,5 +32,5 @@ loadUsers=async function(q=''){
  $$('.userStatus').forEach(b=>b.onclick=async()=>{try{await api('/api/control/users/'+b.dataset.id+'/status',{method:'POST',body:JSON.stringify({active:b.dataset.active!=='true'})});status('Foydalanuvchi holati yangilandi');loadUsers($('#userQ')?.value||'')}catch(e){status(e.message,true)}});
 };
 </script>`;
-  return styled.replace('</body>',script+'</body>');
+  return styled.replace('</body>',script+previewScript+'</body>');
 }
