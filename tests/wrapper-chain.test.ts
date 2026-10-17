@@ -48,8 +48,8 @@ describe('security gate', () => {
 describe('wrapper import chain and scripts', () => {
   test('keeps security/mobile/3D wrappers and starts from the new RBAC wrapper', () => {
     expect(read('super-admin-wrapper.ts')).toContain("await import('./district-ux-wrapper.ts')");
-    expect(read('district-ux-wrapper.ts')).toContain("await import('./mobile-wrapper.ts')");
-    expect(read('mobile-wrapper.ts')).toContain("await import('./wrapper.ts')");
+    expect(read('district-ux-wrapper.ts')).toContain("await import('./safe-mobile-wrapper.ts')");
+    expect(read('safe-mobile-wrapper.ts')).toContain("await import('./wrapper.ts')");
     expect(read('wrapper.ts')).toContain("await import('./index.ts')");
     const pkg=JSON.parse(read('package.json'));
     expect(pkg.scripts.start).toBe('bun super-admin-wrapper.ts');
@@ -58,9 +58,10 @@ describe('wrapper import chain and scripts', () => {
     expect(pkg.dependencies.postgres).toBe('^3.4.7');
   });
 
-  test('admin password reseed never deletes assigned ordinary/control admins', () => {
-    const mobile=read('mobile-wrapper.ts');
-    expect(mobile).toContain("DELETE FROM app_users WHERE username='admin'");
-    expect(mobile).not.toContain("OR upper(role::text)='ADMIN'");
+  test('root password sync never deletes assigned ordinary/control admins', () => {
+    const mobile=read('safe-mobile-wrapper.ts');
+    expect(mobile).not.toContain('DELETE FROM app_users');
+    expect(mobile).toContain("UPDATE app_users SET password_hash=");
+    expect(mobile).toContain("WHERE username=${adminUser}");
   });
 });
