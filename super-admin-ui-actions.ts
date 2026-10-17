@@ -1,9 +1,10 @@
 import type { AccessProfile } from './rbac.ts';
 
 export function enhanceAdminShell(input:string,profile:AccessProfile):string{
+  const styled=input.replace('<style>','<style nonce="__CSP_NONCE__">');
   const isSuper=profile.role==='SUPER_ADMIN';
   const canWrite=isSuper||profile.role==='ADMIN'||(profile.role==='CONTROL_ADMIN'&&profile.controlMode==='active');
-  if(!canWrite)return input;
+  if(!canWrite)return styled;
   const script=`<script nonce="__CSP_NONCE__" data-account-actions="1">
 const accountEsc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 ${isSuper?`loadAdmins=async function(){
@@ -19,5 +20,5 @@ loadUsers=async function(q=''){
  $$('.userStatus').forEach(b=>b.onclick=async()=>{try{await api('/api/control/users/'+b.dataset.id+'/status',{method:'POST',body:JSON.stringify({active:b.dataset.active!=='true'})});status('Foydalanuvchi holati yangilandi');loadUsers($('#userQ')?.value||'')}catch(e){status(e.message,true)}});
 };
 </script>`;
-  return input.replace('</body>',script+'</body>');
+  return styled.replace('</body>',script+'</body>');
 }
