@@ -1,12 +1,12 @@
 {
   "name": "bitiruvchilar-admin",
   "version": "1.0.0",
-  "description": "Buxoro viloyati tibbiyot bitiruvchilari — 3D dashboard va maʼlumot kiritish paneli",
-  "main": "server-wrapper.js",
+  "description": "Buxoro viloyati bitiruvchilari — canonical admin va 3D dashboard",
+  "main": "canonical-server.js",
   "scripts": {
-    "start": "node --no-warnings normalize-hudud.js && node --no-warnings seed-medical-env.js && node --no-warnings server-wrapper.js",
-    "test": "node --test normalize-hudud.test.js test/graduate-utils.test.js",
-    "check": "node --check normalize-hudud.js && node --check seed-medical-env.js && node --check server-wrapper.js && node --check server.js && node --check public/login.js && node --check public/panel.js && node --check public/excel-panel.js && node --check public/excel-dashboard.js && node --check public/admin-extra.js && node --check public/dashboard-metrics.js && node --check public/excel-structured-admin.js && node --check lib/graduate-utils.js && npm test"
+    "start": "node --no-warnings canonical-server.js",
+    "test": "node --test normalize-hudud.test.js test/*.test.js",
+    "check": "node --check canonical-server.js && node --check server.js && node --check public/login.js && node --check public/excel-panel.js && node --check public/dashboard-metrics.js && node --check public/dashboard-summary.js && node --check lib/graduate-utils.js && node --check lib/graduate-model.js && node --check lib/graduate-db.js && node --check lib/import-graduates.js && node --check lib/graduate-service.js && node --check lib/dashboard-summary.js && npm test"
   },
   "engines": {"node": ">=22.13"},
   "dependencies": {"express": "5.1.0"}
