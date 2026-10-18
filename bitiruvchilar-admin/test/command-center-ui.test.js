@@ -49,3 +49,25 @@ test('smart map exposes mount and scoped selection behavior',()=>{
   assert.match(js,/keydown/);
   assert.match(js,/Enter|Space/);
 });
+
+test('command center controller uses same-origin scoped APIs and safe DOM rendering',()=>{
+  const js=read('command-center.js');
+  assert.match(js,/['"]\/api\/command-center['"]/);
+  assert.match(js,/\/api\/command-center\/territory\?hudud=/);
+  assert.doesNotMatch(js,/https?:\/\//i);
+  assert.match(js,/textContent/);
+  assert.match(js,/createElement/);
+  assert.doesNotMatch(js,/\.innerHTML\s*=/);
+  assert.doesNotMatch(js,/pinfl|jshshir|telefon|diagnosis|tashxis/i);
+});
+
+test('command center controller distinguishes auth errors and degrades derived sections safely',()=>{
+  const js=read('command-center.js');
+  assert.match(js,/401/);
+  assert.match(js,/403/);
+  assert.match(js,/unavailable/);
+  assert.match(js,/Ma’lumot vaqtincha mavjud emas/);
+  assert.match(js,/AbortController/);
+  assert.match(js,/Intl\.NumberFormat\(['"]uz-UZ['"]\)/);
+  assert.match(js,/encodeURIComponent/);
+});
