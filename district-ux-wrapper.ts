@@ -7,19 +7,16 @@ import { patchLeadershipDistrictSwitch } from './leadership-district-switch-patc
 import { patchLeadershipDistrictDashboardStyle } from './leadership-district-dashboard-style-patch.ts';
 import { patchLeadershipDistrictMapFocus } from './leadership-district-map-focus-patch.ts';
 import { patchLeadershipDistrictLegend } from './leadership-district-legend-patch.ts';
-import { patchLeadershipDemographyTvPresentation } from './leadership-demography-tv-presentation-patch.ts';
 import { UPLOADED_LEADERSHIP_HTML } from './leadership-uploaded-source.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
 function renderUploadedLeadership() {
   const nonce = randomBytes(16).toString('base64');
-  const html = patchLeadershipDemographyTvPresentation(
-    patchLeadershipDistrictLegend(
-      patchLeadershipDistrictMapFocus(
-        patchLeadershipDistrictDashboardStyle(
-          patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
-        )
+  const html = patchLeadershipDistrictLegend(
+    patchLeadershipDistrictMapFocus(
+      patchLeadershipDistrictDashboardStyle(
+        patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
       )
     )
   )
