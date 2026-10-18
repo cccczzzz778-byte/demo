@@ -1,5 +1,6 @@
 'use strict';
 const {canonicalHudud}=require('./graduate-utils');
+const {DETAILS}=require('./source-details');
 const REGIONS={
  'Бухоро тумани':{total:957,higher:301,nonHigher:656,working:337,unemployed:618,medicalEducation:{total:37,otm:31,technical:6}},
  'Бухоро шаҳар':{total:1455,higher:539,nonHigher:916,working:840,unemployed:612,medicalEducation:{total:76,otm:75,technical:1}},
@@ -9,17 +10,23 @@ const REGIONS={
  'Когон шаҳар':{total:278,higher:86,nonHigher:192,working:159,unemployed:119,medicalEducation:{total:7,otm:4,technical:3}},
  'Олот тумани':{total:467,higher:132,nonHigher:335,working:267,unemployed:199,medicalEducation:{total:10,otm:4,technical:6}},
  'Пешку тумани':{total:486,higher:178,nonHigher:308,working:317,unemployed:168,medicalEducation:{total:23,otm:8,technical:15}},
- 'Ромитан тумани':{total:651,higher:209,nonHigher:442,working:495,unemployed:155,examined:604,healthy:601,sick:3,medicalEducation:{total:21,otm:16,technical:5},diagnoses:[{name:'Bolalar miya falaji',count:1},{name:'Itsinka kushing',count:1},{name:"Endemik Bo'qoq",count:1}]},
+ 'Ромитан тумани':{total:651,higher:209,nonHigher:442,working:495,unemployed:155,examined:604,healthy:601,sick:3,medicalEducation:{total:21,otm:16,technical:5},diagnoses:[{name:'Bolalar miya falaji',count:1},{name:'Itsinka kushing',count:1},{name:"Endemik Bo'qoq",count:1}],healthPathways:{ambulatory:3,inpatient:0,operative:0,district:0,region:0,republic:0}},
  'Шофиркон тумани':{total:814,higher:282,nonHigher:532,working:471,unemployed:340,medicalEducation:{total:22,otm:16,technical:6}},
  'Ғиждувон тумани':{total:1626,higher:500,nonHigher:1126,working:899,unemployed:722,medicalEducation:{total:15,otm:11,technical:4}},
  'Қоракўл тумани':{total:874,higher:260,nonHigher:614,working:538,unemployed:336,medicalEducation:{total:23,otm:7,technical:16}},
  'Қоровулбозор тумани':{total:131,higher:38,nonHigher:93,working:67,unemployed:63,medicalEducation:{total:3,otm:2,technical:1}}
 };
-const GLOBAL={hudud:'Buxoro viloyati',total:9823,higher:3184,nonHigher:6639,working:5674,unemployed:4131,examined:604,healthy:601,sick:3,medicalEducation:{total:283,otm:210,technical:73},diagnoses:[{name:'Bolalar miya falaji',count:1},{name:'Itsinka kushing',count:1},{name:"Endemik Bo'qoq",count:1}]};
+const GLOBAL={hudud:'Buxoro viloyati',total:9823,higher:3184,nonHigher:6639,working:5674,unemployed:4131,examined:604,healthy:601,sick:3,medicalEducation:{total:283,otm:210,technical:73},diagnoses:[{name:'Bolalar miya falaji',count:1},{name:'Itsinka kushing',count:1},{name:"Endemik Bo'qoq",count:1}],healthPathways:{ambulatory:3,inpatient:0,operative:0,district:0,region:0,republic:0}};
+const blankEdu=()=>({otm:0,technical:0,lyceum:0,school:0,unknown:0});
+const blankGender=()=>({male:0,female:0,unknown:0});
+const blankEmp=()=>({publicSector:0,privateSector:0,lawEnforcement:0,entrepreneur:0,credit:0,nextEducation:0,migration:0,selfEmployed:0,vocational:0,childcare:0,unemployed:0,deceased:0,prison:0,other:0,unknown:0});
+const blankPlans=()=>({jobPlacement:0,entrepreneurship:0,credit:0,selfEmployment:0,migration:0,vocational:0,homemaker:0,affluentFamily:0,applicant:0,marriedOtherRegion:0});
+const blankHealth=()=>({ambulatory:0,inpatient:0,operative:0,district:0,region:0,republic:0});
+function withDetails(base,key){const d=DETAILS[key]||{};return {...base,education:{...blankEdu(),...(d.education||{})},gender:{...blankGender(),...(d.gender||{})},employmentBreakdown:{...blankEmp(),...(d.employmentBreakdown||{})},plans:{...blankPlans(),...(d.plans||{})},healthPathways:{...blankHealth(),...(base.healthPathways||{})},medicalSpecialties:(d.medicalSpecialties||[]).map(x=>({...x}))};}
 function sourceSummary(hudud=''){
  const key=hudud?canonicalHudud(hudud):'';
- if(!key)return {...GLOBAL,medicalEducation:{...GLOBAL.medicalEducation},diagnoses:GLOBAL.diagnoses.map(x=>({...x}))};
+ if(!key)return withDetails({...GLOBAL,medicalEducation:{...GLOBAL.medicalEducation},diagnoses:GLOBAL.diagnoses.map(x=>({...x}))},'__GLOBAL__');
  const r=REGIONS[key]||{total:0,higher:0,nonHigher:0,working:0,unemployed:0,medicalEducation:{total:0,otm:0,technical:0}};
- return {hudud:key,total:r.total||0,higher:r.higher||0,nonHigher:r.nonHigher||0,working:r.working||0,unemployed:r.unemployed||0,examined:r.examined||0,healthy:r.healthy||0,sick:r.sick||0,medicalEducation:{...(r.medicalEducation||{total:0,otm:0,technical:0})},diagnoses:(r.diagnoses||[]).map(x=>({...x}))};
+ return withDetails({hudud:key,total:r.total||0,higher:r.higher||0,nonHigher:r.nonHigher||0,working:r.working||0,unemployed:r.unemployed||0,examined:r.examined||0,healthy:r.healthy||0,sick:r.sick||0,medicalEducation:{...(r.medicalEducation||{total:0,otm:0,technical:0})},diagnoses:(r.diagnoses||[]).map(x=>({...x})),healthPathways:r.healthPathways||blankHealth()},key);
 }
 module.exports={sourceSummary,REGIONS,GLOBAL};
