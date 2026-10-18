@@ -16,7 +16,6 @@
     const s=getComputedStyle(el);
     return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity||1)!==0;
   }
-  function depth(el){let n=0;while(el&&el.parentElement){n++;el=el.parentElement}return n}
   function rowForText(text){
     const t=norm(text);
     return rows.find(r=>{
@@ -56,22 +55,20 @@
            line('OTM',fmt(higher),pct(higher,total));
     }
     compactBox(el);
+    el.dataset.hoverDistrict=String(r.key||r.name||'');
     el.innerHTML=`<div data-map-hover-fixed="1" style="width:100%;height:auto;min-height:0;max-height:100px;overflow:hidden"><div style="font-size:12px;line-height:16px;font-weight:800;color:#f1fbfc;margin:0 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>${body}</div>`;
   }
   function patch(){
-    const candidates=[...document.querySelectorAll('div')].filter(el=>{
-      if(!visible(el))return false;
-      const t=el.textContent||'';
-      if(t.length>650)return false;
-      const legacy=/Bitiruvchilar/i.test(t)&&(/Ishga joylashgan/i.test(t)||/O['’ʻʼ`]z hududida/i.test(t)||/Bo['’ʻʼ`]sh shtat/i.test(t)||/NaN/i.test(t));
-      const medical=/Tibbiyot bitiruvchilari/i.test(t)&&/NaN/i.test(t);
-      return legacy||medical;
-    });
-    if(!candidates.length)return;
-    candidates.sort((a,b)=>depth(b)-depth(a)||(a.textContent||'').length-(b.textContent||'').length);
-    const el=candidates[0];
-    const r=rowForText(el.textContent||'');
-    if(r)render(el,r);
+    const candidates=[...document.querySelectorAll('#map .tip')].filter(visible);
+    for(const el of candidates){
+      const r=rowForText(el.textContent||'');
+      if(!r)continue;
+      const fixed=el.querySelector('[data-map-hover-fixed="1"]');
+      const key=String(r.key||r.name||'');
+      if(fixed&&el.dataset.hoverDistrict===key)return;
+      render(el,r);
+      return;
+    }
   }
   let queued=false;
   const schedule=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;patch()})};
