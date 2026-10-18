@@ -98,3 +98,15 @@ test('npm check includes command center browser scripts',()=>{
   assert.match(pkg.scripts.check,/node --check public\/command-center-map\.js/);
   assert.match(pkg.scripts.check,/node --check public\/command-center\.js/);
 });
+
+test('map status is not communicated by color alone and keyboard/mobile support remains explicit',()=>{
+  const html=read('command-center.html');
+  const css=read('command-center.css');
+  assert.match(html,/class=["'][^"']*cc-map-legend/);
+  for(const label of ['Barqaror','Diqqat','Kritik','Holat berilmagan'])assert.ok(html.includes(label),`missing ${label}`);
+  assert.match(html,/aria-live=["']polite["']/);
+  assert.match(html,/<button[^>]+id=["']cc-refresh["']/);
+  assert.match(css,/:focus-visible/);
+  assert.match(css,/@media\(max-width:760px\)/);
+  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
+});
