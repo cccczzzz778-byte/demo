@@ -25,7 +25,18 @@
     })||null;
   }
   function line(label,value,muted=''){
-    return `<div style="display:flex;justify-content:space-between;gap:16px;align-items:center;margin-top:5px;font-size:12px;line-height:1.25"><span style="color:#9bb3bd;white-space:nowrap">${label}</span><b style="color:#e8f7f8;font-variant-numeric:tabular-nums;white-space:nowrap">${value}${muted?` <small style=\"font-size:10px;color:#7fded2;font-weight:700\">${muted}</small>`:''}</b></div>`;
+    return `<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;height:18px;font-size:11px;line-height:18px"><span style="color:#9bb3bd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}</span><b style="color:#e8f7f8;font-variant-numeric:tabular-nums;white-space:nowrap">${value}${muted?` <small style=\"font-size:9px;color:#7fded2;font-weight:700\">${muted}</small>`:''}</b></div>`;
+  }
+  function compactBox(el){
+    el.style.setProperty('height','auto','important');
+    el.style.setProperty('min-height','0','important');
+    el.style.setProperty('max-height','118px','important');
+    el.style.setProperty('width','210px','important');
+    el.style.setProperty('min-width','210px','important');
+    el.style.setProperty('max-width','210px','important');
+    el.style.setProperty('overflow','hidden','important');
+    el.style.setProperty('padding','9px 11px','important');
+    el.style.setProperty('box-sizing','border-box','important');
   }
   function render(el,r){
     const total=Number(r.jami)||0;
@@ -34,7 +45,7 @@
     let body='';
     if(medical){
       const otm=Number(r.oliy)||0,tech=Number(r.texnikum)||0;
-      body=line('Tibbiyot bitiruvchilari',fmt(total))+
+      body=line('Tibbiyot jami',fmt(total))+
            line('OTM',fmt(otm),pct(otm,total))+
            line('Texnikum',fmt(tech),pct(tech,total));
     }else{
@@ -42,9 +53,10 @@
       body=line('Bitiruvchilar',fmt(total))+
            line('Ishga joylashgan',fmt(working),pct(working,total))+
            line('Ishsiz',fmt(unemployed),pct(unemployed,total))+
-           line('OTM bitiruvchilari',fmt(higher),pct(higher,total));
+           line('OTM',fmt(higher),pct(higher,total));
     }
-    el.innerHTML=`<div data-map-hover-fixed="1" style="min-width:175px;padding:1px 0"><div style="font-size:13px;font-weight:800;color:#f1fbfc;margin-bottom:7px">${title}</div>${body}</div>`;
+    compactBox(el);
+    el.innerHTML=`<div data-map-hover-fixed="1" style="width:100%;height:auto;min-height:0;max-height:100px;overflow:hidden"><div style="font-size:12px;line-height:16px;font-weight:800;color:#f1fbfc;margin:0 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>${body}</div>`;
   }
   function patch(){
     const candidates=[...document.querySelectorAll('div')].filter(el=>{
