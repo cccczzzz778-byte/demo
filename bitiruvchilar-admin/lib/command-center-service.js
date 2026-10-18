@@ -19,8 +19,12 @@ function scopedRows(db,scope){
       where.push('op_oshp=?');args.push(String(scope.institution));
     }
   }
-  const sql=`SELECT id,fio,pinfl,hudud,op_oshp,education_level,employment_status,medical_exam_date,updated_at FROM excel_graduates${where.length?' WHERE '+where.join(' AND '):''}`;
-  try{return db.prepare(sql).all(...args)}catch{return[]}
+  try{
+    const cols=new Set(db.prepare('PRAGMA table_info(excel_graduates)').all().map(x=>x.name));
+    const optional=cols.has('updated_at')?',updated_at':'';
+    const sql=`SELECT id,fio,pinfl,hudud,op_oshp,education_level,employment_status,medical_exam_date${optional} FROM excel_graduates${where.length?' WHERE '+where.join(' AND '):''}`;
+    return db.prepare(sql).all(...args);
+  }catch{return[]}
 }
 
 function metricsFor(rows){
