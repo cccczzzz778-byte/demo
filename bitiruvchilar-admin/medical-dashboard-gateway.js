@@ -48,10 +48,10 @@ function rewriteDashboard(html,mode){
   x.meta={...(x.meta||{}),dashboardMode:normalized,manba:normalized==='medical'?'555(2).xlsx — tibbiyot bitiruvchilari':'Bitiruvchilar yagona bazasi'};
   out=out.replace(m[0],`<script type="application/json" id="dash-data">${JSON.stringify(x).replace(/</g,'\\u003c')}</script>`)
  }catch(e){console.error('dashboard mode rewrite',e)}}
- const close=out.toLowerCase().lastIndexOf('</body>');if(close>=0)out=out.slice(0,close)+'<script src="/medical-mode.js"></script><script src="/ranking-fix.js"></script>'+out.slice(close);return injectLatin(out);
+ const close=out.toLowerCase().lastIndexOf('</body>');if(close>=0)out=out.slice(0,close)+'<script src="/medical-mode.js"></script><script src="/ranking-fix.js"></script><script src="/map-hover-fix.js"></script>'+out.slice(close);return injectLatin(out);
 }
 const server=http.createServer(async(req,res)=>{let u;try{u=new URL(req.url,'http://local')}catch{return res.end('Bad URL')}const p=u.pathname;
- if(req.method==='GET'&&['/medical-mode.js','/ranking-fix.js','/ui-latin.js'].includes(p)){const f=path.join(__dirname,'public',p.slice(1));const b=fs.readFileSync(f);res.writeHead(200,{'Content-Type':'application/javascript; charset=utf-8','Content-Length':b.length,'Cache-Control':'no-store'});return res.end(b)}
+ if(req.method==='GET'&&['/medical-mode.js','/ranking-fix.js','/map-hover-fix.js','/ui-latin.js'].includes(p)){const f=path.join(__dirname,'public',p.slice(1));const b=fs.readFileSync(f);res.writeHead(200,{'Content-Type':'application/javascript; charset=utf-8','Content-Length':b.length,'Cache-Control':'no-store'});return res.end(b)}
  if(req.method==='GET'&&p==='/api/public/medical-dashboard')return json(res,200,getMedicalDashboard(u.searchParams.get('hudud')||''));
  if(req.method==='GET'&&p==='/api/public/rankings')return json(res,200,buildRankingSummary());
  if(req.method==='GET'&&(p==='/'||p==='/dashboard'||p==='/dashboard.html')){try{const up=await getUpstreamHtml(p+u.search);return sendHtml(res,up,rewriteDashboard(up.body,u.searchParams.get('mode')))}catch(e){res.writeHead(502,{'Content-Type':'text/plain; charset=utf-8'});return res.end('Dashboard backend tayyor emas.')}}
