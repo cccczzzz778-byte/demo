@@ -10,19 +10,22 @@ import { patchLeadershipDistrictLegend } from './leadership-district-legend-patc
 import { patchLeadershipViewModes } from './leadership-view-modes-patch.ts';
 import { patchLeadershipDemography } from './leadership-demography-patch.ts';
 import { patchLeadershipAiForecast } from './leadership-ai-forecast-patch.ts';
+import { patchLeadershipHealthStats } from './leadership-health-stats-patch.ts';
 import { UPLOADED_LEADERSHIP_HTML } from './leadership-uploaded-source.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
 function renderUploadedLeadership() {
   const nonce = randomBytes(16).toString('base64');
-  const html = patchLeadershipViewModes(
-    patchLeadershipAiForecast(
-      patchLeadershipDemography(
-        patchLeadershipDistrictLegend(
-          patchLeadershipDistrictMapFocus(
-            patchLeadershipDistrictDashboardStyle(
-              patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
+  const html = patchLeadershipHealthStats(
+    patchLeadershipViewModes(
+      patchLeadershipAiForecast(
+        patchLeadershipDemography(
+          patchLeadershipDistrictLegend(
+            patchLeadershipDistrictMapFocus(
+              patchLeadershipDistrictDashboardStyle(
+                patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
+              )
             )
           )
         )
