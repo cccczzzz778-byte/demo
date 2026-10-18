@@ -2,12 +2,11 @@ import { describe, expect, test } from 'bun:test';
 import { patchLeadershipSectionMenu } from './leadership-section-menu-patch.ts';
 
 describe('leadership section menu patch', () => {
-  const src='</style><script>const DI=[];let mode="ov",cur=null;function renderOv(){} function renderUnit(u){} function home(){} function selectUnit(k){} home();fly=false;loop();</script>';
+  const src='</style><script>const DI=[];let mode="ov",cur=null;function renderOv(){} function renderUnit(u){} function home(){} home();fly=false;loop();</script>';
 
-  test('adds top section menu without replacing the premium side-panel layout', () => {
+  test('adds a compact premium section menu and concise side-panel summaries', () => {
     const out=patchLeadershipSectionMenu(src);
-    expect(out).toContain('BUXORO_SECTION_MENU_V2');
-    expect(out).toContain('Umumiy');
+    expect(out).toContain('BUXORO_SECTION_MENU_V3');
     expect(out).toContain('Muassasalar');
     expect(out).toContain('Kadrlar');
     expect(out).toContain('Demografiya');
@@ -17,10 +16,11 @@ describe('leadership section menu patch', () => {
     expect(out).toContain('Maxsus yo‘nalishlar');
     expect(out).toContain('Tez yordam / infratuzilma');
     expect(out).toContain('Murojaatlar');
-    expect(out).toContain('sfRenderIntoMainPanels');
+    expect(out).toContain('sf-summary-card');
+    expect(out).toContain('sf-value');
+    expect(out).toContain('Batafsil');
+    expect(out).toContain('sfOpenDetail');
     expect(out).toContain('.section-filtered #L,.section-filtered #R{display:block!important');
-    expect(out).not.toContain('className=\'sf-panel left\'');
-    expect(out).not.toContain('className=\'sf-panel right\'');
   });
 
   test('filters 3D facility layers by section', () => {
