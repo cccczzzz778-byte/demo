@@ -8,7 +8,7 @@ function liveReady(db){
  const h=Number(db.prepare("SELECT COUNT(*) n FROM excel_graduates WHERE education_level='OTM'").get().n||0);
  const e=Number(db.prepare("SELECT COUNT(*) n FROM excel_graduates WHERE medical_exam_date<>''").get().n||0);
  const m=tableExists(db,'medical_graduates')?Number(db.prepare('SELECT COUNT(*) n FROM medical_graduates').get().n||0):0;
- return t===9823&&h===3184&&e===3141&&m===283;
+ return t===9823&&h===3184&&e===8363&&m===283;
 }
 function topCounts(rows,key,limit=5){const c=new Map();for(const r of rows){const v=String(r[key]||'').trim();if(v)c.set(v,(c.get(v)||0)+1)}return [...c.entries()].map(([name,count])=>({name,count})).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name)).slice(0,limit)}
 function buildDashboardSummary(db,hudud=''){
