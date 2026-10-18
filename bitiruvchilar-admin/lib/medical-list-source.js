@@ -15,14 +15,18 @@ function classifyMedicalRow(row={}){
   else if(/ishsiz|ишсиз/.test(source))status='Ishsiz';
   return {...row,status,residency_studying:studying,residency_applied:applied};
 }
+function normalizePayloadRow(r){
+  if(Array.isArray(r))return {fio:r[0],hudud:r[1],level:r[2],institution:r[3],specialty:r[4],source_status:r[5],detail:r[6]};
+  return r||{};
+}
 function loadMedicalRows(force=false){
   const version=String(process.env.MEDICAL_LIST_VERSION||'').trim();
   if(!force&&version&&version===cachedVersion)return cachedRows;
   const parts=[];for(let i=0;i<100;i++){const v=process.env[`MEDICAL_LIST_${String(i).padStart(2,'0')}`];if(v)parts.push(v)}
   if(!version||!parts.length){cachedVersion=version;cachedRows=[];return cachedRows}
   const payload=JSON.parse(zlib.inflateSync(Buffer.from(parts.join(''),'base64')).toString('utf8'));
-  const rows=Array.isArray(payload.rows)?payload.rows:[];
-  cachedRows=rows.map(r=>classifyMedicalRow({
+  const rawRows=Array.isArray(payload.rows)?payload.rows:(Array.isArray(payload.r)?payload.r:[]);
+  cachedRows=rawRows.map(normalizePayloadRow).map(r=>classifyMedicalRow({
     fio:String(r.fio||'').trim(),hudud:canonicalHudud(r.hudud||''),level:String(r.level||'').trim(),
     institution:String(r.institution||'').trim(),specialty:String(r.specialty||'').trim(),
     source_status:String(r.source_status||'').trim(),detail:String(r.detail||'').trim()
@@ -48,4 +52,4 @@ function publicMedicalList(hudud='',rows=loadMedicalRows()){
     residencyStudying:!!r.residency_studying,residencyApplied:!!r.residency_applied
   }));
 }
-module.exports={classifyMedicalRow,loadMedicalRows,summarizeMedicalRows,publicMedicalList};
+module.exports={classifyMedicalRow,loadMedicalRows,summarizeMedicalRows,publicMedicalList,normalizePayloadRow};
