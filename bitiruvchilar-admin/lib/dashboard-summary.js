@@ -8,7 +8,7 @@ function liveReady(db){
  const h=Number(db.prepare("SELECT COUNT(*) n FROM excel_graduates WHERE education_level='OTM'").get().n||0);
  const e=Number(db.prepare("SELECT COUNT(*) n FROM excel_graduates WHERE medical_exam_date<>''").get().n||0);
  const m=tableExists(db,'medical_graduates')?Number(db.prepare('SELECT COUNT(*) n FROM medical_graduates').get().n||0):0;
- return t===9823&&h===3184&&e===604&&m===283;
+ return t===9823&&h===3184&&e===3149&&m===283;
 }
 function topCounts(rows,key,limit=5){const c=new Map();for(const r of rows){const v=String(r[key]||'').trim();if(v)c.set(v,(c.get(v)||0)+1)}return [...c.entries()].map(([name,count])=>({name,count})).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name)).slice(0,limit)}
 function buildDashboardSummary(db,hudud=''){
@@ -23,6 +23,6 @@ function buildDashboardSummary(db,hudud=''){
   const mrows=filter?db.prepare('SELECT education_level,specialty,institution,status FROM medical_graduates WHERE hudud=?').all(filter):db.prepare('SELECT education_level,specialty,institution,status FROM medical_graduates').all();
   if(mrows.length){medicalEducation={total:mrows.length,otm:mrows.filter(x=>normalizeEducationLevel(x.education_level)==='OTM').length,technical:mrows.filter(x=>normalizeEducationLevel(x.education_level)==='Texnikum').length};medicalSpecialties=topCounts(mrows,'specialty',5)}
  }
- return {hudud:filter||'Buxoro viloyati',total:a.total,higher:a.higher,nonHigher:a.nonHigher,working:a.working,unemployed:a.unemployed,examined:a.examined,healthy:a.healthy,sick:a.sick,education:a.education,gender:a.gender,employmentBreakdown:a.employmentBreakdown,healthPathways:a.healthPathways,medicalEducation,medicalSpecialties,diagnoses:[...diag.entries()].map(([name,count])=>({name,count})).sort((x,y)=>y.count-x.count||x.name.localeCompare(y.name))};
+ return {hudud:filter||'Buxoro viloyati',total:a.total,higher:a.higher,nonHigher:a.nonHigher,working:a.working,unemployed:a.unemployed,examined:a.examined,healthy:a.healthy,sick:a.sick,healthOther:a.healthOther,education:a.education,gender:a.gender,employmentBreakdown:a.employmentBreakdown,healthPathways:a.healthPathways,medicalEducation,medicalSpecialties,diagnoses:[...diag.entries()].map(([name,count])=>({name,count})).sort((x,y)=>y.count-x.count||x.name.localeCompare(y.name))};
 }
 module.exports={buildDashboardSummary};
