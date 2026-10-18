@@ -1,4 +1,4 @@
-export const LEADERSHIP_HEALTH_STATS_MARKER = 'BUXORO_LEADERSHIP_HEALTH_STATS_V1';
+export const LEADERSHIP_HEALTH_STATS_MARKER = 'BUXORO_LEADERSHIP_HEALTH_STATS_V2';
 
 export function patchLeadershipHealthStats(input: string): string {
   if (!input || input.includes(LEADERSHIP_HEALTH_STATS_MARKER)) return input;
@@ -8,9 +8,20 @@ export function patchLeadershipHealthStats(input: string): string {
 
   const css = `
 /* ${LEADERSHIP_HEALTH_STATS_MARKER} */
-.hs-box{margin-top:10px;padding:10px;border:1px solid rgba(56,215,255,.2);border-radius:12px;background:rgba(2,19,47,.72)}
-.hs-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.hs-title b{font-size:11px;color:#dff8ff;letter-spacing:.35px}.hs-title span{font-size:8px;color:#77dfff;border:1px solid rgba(39,216,255,.2);padding:3px 6px;border-radius:999px}
-.hs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.hs-card{padding:8px;border-radius:9px;border:1px solid rgba(88,190,255,.12);background:rgba(1,14,35,.58);min-width:0}.hs-card strong{display:block;color:#fff;font-size:16px;line-height:1.05;font-variant-numeric:tabular-nums}.hs-card small{display:block;margin-top:3px;color:#91bdd2;font-size:8.5px;line-height:1.2}.hs-card .d{font-size:8px;margin-top:3px;color:#61efae}.hs-card .dn{color:#ff8d9e}.hs-wide{grid-column:1/-1}.hs-mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:6px}.hs-mini .hs-card strong{font-size:14px}
+.hs-box{margin-top:12px;padding:11px;border:1px solid rgba(76,210,255,.24);border-radius:16px;background:linear-gradient(160deg,rgba(4,30,67,.90),rgba(2,14,36,.92));box-shadow:0 12px 32px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.035);overflow:hidden;position:relative}
+.hs-box:before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,transparent,#28d8ff,#9f7cff,transparent);opacity:.72}
+.hs-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.hs-title b{font-size:10.5px;color:#e9fbff;letter-spacing:.85px}.hs-title span{font-size:8px;font-weight:800;color:#071a2f;background:#6ee7ff;padding:4px 8px;border-radius:999px;box-shadow:0 0 16px rgba(76,220,255,.25)}
+.hs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.hs-card{position:relative;padding:10px 9px 9px 11px;border-radius:12px;border:1px solid rgba(113,188,255,.13);background:linear-gradient(145deg,rgba(10,42,79,.70),rgba(2,18,43,.78));min-width:0;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+.hs-card:before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:#42d8ff;box-shadow:0 0 10px rgba(66,216,255,.65)}
+.hs-grid>.hs-card:nth-child(2):before{background:#9f7cff;box-shadow:0 0 10px rgba(159,124,255,.55)}
+.hs-grid>.hs-card:nth-child(3):before{background:#48e6a8;box-shadow:0 0 10px rgba(72,230,168,.55)}
+.hs-grid>.hs-card:nth-child(4):before{background:#ffd15c;box-shadow:0 0 10px rgba(255,209,92,.50)}
+.hs-grid>.hs-card:nth-child(5):before{background:#ff7f91;box-shadow:0 0 10px rgba(255,127,145,.50)}
+.hs-grid>.hs-card:nth-child(6):before{background:#59a7ff;box-shadow:0 0 10px rgba(89,167,255,.50)}
+.hs-card strong{display:block;color:#fff;font-size:18px;line-height:1;font-weight:850;font-variant-numeric:tabular-nums;letter-spacing:.15px;text-shadow:0 0 14px rgba(112,216,255,.10)}
+.hs-card small{display:block;margin-top:5px;color:#9ec8db;font-size:8.2px;line-height:1.18;text-transform:uppercase;letter-spacing:.25px}.hs-card .d{display:inline-block;font-size:7.8px;margin-top:5px;padding:2px 5px;border-radius:999px;color:#69f0b3;background:rgba(43,211,138,.10);border:1px solid rgba(43,211,138,.16)}.hs-card .dn{color:#ff9aac;background:rgba(255,91,112,.09);border-color:rgba(255,91,112,.16)}
+.hs-mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:7px}.hs-mini .hs-card{padding:8px 6px 7px 9px;background:rgba(4,23,51,.64)}.hs-mini .hs-card:before{top:7px;bottom:7px;width:2px;opacity:.78}.hs-mini .hs-card strong{font-size:14px}.hs-mini .hs-card small{font-size:7.4px;line-height:1.14}.hs-wide{grid-column:1/-1}
+body.presentation-mode .hs-box,body.tv-mode .hs-box{padding:13px}.presentation-mode .hs-card strong,.tv-mode .hs-card strong{font-size:20px}.presentation-mode .hs-mini .hs-card strong,.tv-mode .hs-mini .hs-card strong{font-size:15px}
 `;
 
   const runtime = String.raw`
