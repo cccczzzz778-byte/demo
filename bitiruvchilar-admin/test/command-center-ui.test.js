@@ -30,3 +30,22 @@ test('command center stylesheet avoids forced desktop-only minimum width',()=>{
   const css=read('command-center.css');
   assert.doesNotMatch(css,/min-width\s*:\s*(?:9\d\d|1\d{3,})px/i);
 });
+
+test('smart map defines the 13 canonical Buxoro territories and no personal fields',()=>{
+  const js=read('command-center-map.js');
+  const names=['Бухоро шаҳар','Когон шаҳар','Олот тумани','Бухоро тумани','Вобкент тумани','Ғиждувон тумани','Жондор тумани','Когон тумани','Қоракўл тумани','Қоровулбозор тумани','Пешку тумани','Ромитан тумани','Шофиркон тумани'];
+  for(const name of names)assert.ok(js.includes(name),`missing ${name}`);
+  assert.equal((js.match(/hudud:/g)||[]).length,13);
+  assert.doesNotMatch(js,/\bfetch\s*\(|XMLHttpRequest|axios|WebSocket/i);
+  assert.doesNotMatch(js,/pinfl|jshshir|telefon|diagnosis|tashxis/i);
+});
+
+test('smart map exposes mount and scoped selection behavior',()=>{
+  const js=read('command-center-map.js');
+  assert.match(js,/CommandCenterMap\s*=\s*Object\.freeze/);
+  assert.match(js,/mount\s*:/);
+  assert.match(js,/allowedHudud/);
+  assert.match(js,/onSelect/);
+  assert.match(js,/keydown/);
+  assert.match(js,/Enter|Space/);
+});
