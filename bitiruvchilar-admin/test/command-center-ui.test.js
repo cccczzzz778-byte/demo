@@ -44,7 +44,7 @@ test('smart map defines the 13 canonical Buxoro territories and no personal fiel
 test('smart map exposes mount and scoped selection behavior',()=>{
   const js=read('command-center-map.js');
   assert.match(js,/CommandCenterMap\s*=\s*Object\.freeze/);
-  assert.match(js,/mount\s*:/);
+  assert.match(js,/Object\.freeze\(\{(?:mount|mount\s*:)/);
   assert.match(js,/allowedHudud/);
   assert.match(js,/onSelect/);
   assert.match(js,/keydown/);
