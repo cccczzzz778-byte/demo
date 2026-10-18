@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { prepareMonitoringDashboardHtml } from './monitoring-template.ts';
+import { patchTvPresentationMode } from './tv-presentation-mode-patch.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
@@ -41,7 +42,7 @@ Bun.serve=function monitoringRouteServe(options:any){
         const contentType=response?.headers?.get?.('content-type')||'';
         if(request.method==='GET'&&pathname==='/leadership'&&response instanceof Response&&response.status>=200&&response.status<300&&contentType.includes('text/html')){
           const nonce=randomBytes(16).toString('base64');
-          const html=prepareMonitoringDashboardHtml(nonce);
+          const html=patchTvPresentationMode(prepareMonitoringDashboardHtml(nonce),nonce);
           return new Response(html,{status:response.status,statusText:response.statusText,headers:monitoringHeaders(response.headers,nonce)});
         }
       }catch(e){
