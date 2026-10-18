@@ -27,3 +27,15 @@ test('map hover fixer is scoped to tooltip and cannot resize the map container',
   assert.match(js,/querySelectorAll\(['"]#map \\.tip['"]\)/);
   assert.doesNotMatch(js,/querySelectorAll\(['"]div['"]\)/);
 });
+
+test('live database readiness uses the unique-person medical exam control total',()=>{
+  const js=fs.readFileSync(path.join(__dirname,'../lib/dashboard-summary.js'),'utf8');
+  assert.match(js,/e===3141/);
+  assert.doesNotMatch(js,/e===3148/);
+});
+
+test('health dashboard explicitly shows other medical statuses',()=>{
+  const js=fs.readFileSync(path.join(__dirname,'../public/dashboard-summary.js'),'utf8');
+  assert.match(js,/Boshqa holat/);
+  assert.match(js,/healthOther/);
+});
