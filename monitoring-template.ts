@@ -16,9 +16,12 @@ export function prepareMonitoringDashboardHtml(nonce:string):string{
   if(!html.includes(MONITORING_TEMPLATE_MARKER)){
     html=html.replace('</head>',`<meta name="buxoro-monitoring-template" content="${MONITORING_TEMPLATE_MARKER}"></head>`);
   }
+  html=html.replace(
+    '<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>',
+    `<script${nonce?` nonce="${nonce}"`:''} src="/assets/three-r128.min.js"></script>`,
+  );
   if(nonce){
     html=html.replace('<style>',`<style nonce="${nonce}">`);
-    html=html.replace('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>',`<script nonce="${nonce}" src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>`);
     html=html.replace('<script>',`<script nonce="${nonce}">`);
     html=html.replaceAll('__CSP_NONCE__',nonce);
   }
