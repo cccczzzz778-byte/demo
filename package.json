@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "bun@1.2.23",
   "scripts": {
-    "start": "bun super-admin-wrapper.ts",
+    "start": "bun monitoring-entry.ts",
     "test": "bun test"
   },
   "dependencies": {
