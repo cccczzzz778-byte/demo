@@ -4,7 +4,8 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 
-const publicDir=path.join(__dirname,'..','public');
+const root=path.join(__dirname,'..');
+const publicDir=path.join(root,'public');
 const read=name=>fs.readFileSync(path.join(publicDir,name),'utf8');
 
 test('command center shell exposes required anchors and local assets only',()=>{
@@ -70,4 +71,22 @@ test('command center controller distinguishes auth errors and degrades derived s
   assert.match(js,/AbortController/);
   assert.match(js,/Intl\.NumberFormat\(['"]uz-UZ['"]\)/);
   assert.match(js,/encodeURIComponent/);
+});
+
+test('canonical server exposes authenticated command center page and fixed local assets',()=>{
+  const server=fs.readFileSync(path.join(root,'canonical-server-v2.js'),'utf8');
+  assert.match(server,/p===['"]\/command-center['"]/);
+  assert.match(server,/command-center\.html/);
+  assert.match(server,/command-center\.css/);
+  assert.match(server,/command-center-map\.js/);
+  assert.match(server,/command-center\.js/);
+  assert.match(server,/await auth\(req\)/);
+  assert.match(server,/p==='\/'\|\|p==='\/dashboard'\|\|p==='\/dashboard\.html'/);
+  assert.match(server,/p==='\/health'/);
+});
+
+test('npm check includes command center browser scripts',()=>{
+  const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+  assert.match(pkg.scripts.check,/node --check public\/command-center-map\.js/);
+  assert.match(pkg.scripts.check,/node --check public\/command-center\.js/);
 });
