@@ -12,7 +12,7 @@ const PORT=Number(process.env.PORT)||8080;
 const UPSTREAM_PORT=8081;
 const DB_PATH=process.env.DB_PATH||path.join(__dirname,'data.sqlite');
 const DISTRICTS=[
- ['Buxoro shahri','Бухоро шаҳар'],['Kogon shahri','Когон шаҳар'],['Olot','Олот тумани'],['Buxoro tumani','Бухоро тумани'],['Vobkent','Вобкент тумани'],["G'ijduvon",'Ғиждувон тумани'],['Jondor','Жондор тумани'],['Kogon tumani','Когон тумани'],["Qorako'l",'Қоракўл тумани'],['Qorovulbozor','Қоровулбозор тумани'],['Peshku','Пешku тумани'],['Romitan','Ромитан тумани'],['Shofirkon','Шофиркон тумани']
+ ['Buxoro shahri','Бухоро шаҳар'],['Kogon shahri','Когон шаҳар'],['Olot','Олот тумани'],['Buxoro tumani','Бухоро тумани'],['Vobkent','Вобкент тумани'],["G'ijduvon",'Ғиждувон тумани'],['Jondor','Жондор тумани'],['Kogon tumani','Когон тумани'],["Qorako'l",'Қоракўл тумани'],['Qorovulbozor','Қоровулбозор тумани'],['Peshku','Пешку тумани'],['Romitan','Ромитан тумани'],['Shofirkon','Шофиркон тумани']
 ];
 const db=new DatabaseSync(DB_PATH,{readOnly:false});
 let stopping=false;
