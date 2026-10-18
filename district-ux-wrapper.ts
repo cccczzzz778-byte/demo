@@ -17,26 +17,29 @@ import { patchLeadershipMedicalLayoutFix } from './leadership-medical-layout-fix
 import { patchLeadershipDistrictCommandCenter } from './leadership-district-command-center-patch.ts';
 import { patchLeadershipReferenceLayout } from './leadership-reference-layout-patch.ts';
 import { patchLeadershipKTMP } from './leadership-ktmp-patch.ts';
+import { patchLeadershipKogonSplit } from './leadership-kogon-split-patch.ts';
 import { UPLOADED_LEADERSHIP_HTML } from './leadership-uploaded-source.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
 function renderUploadedLeadership() {
   const nonce = randomBytes(16).toString('base64');
-  const html = patchLeadershipKTMP(
-    patchLeadershipReferenceLayout(
-      patchLeadershipDistrictCommandCenter(
-        patchLeadershipMedicalLayoutFix(
-          patchLeadershipMedicalCommandCenter(
-            patchLeadershipHistoryStats(
-              patchLeadershipHealthStats(
-                patchLeadershipViewModes(
-                  patchLeadershipAiForecast(
-                    patchLeadershipDemography(
-                      patchLeadershipDistrictLegend(
-                        patchLeadershipDistrictMapFocus(
-                          patchLeadershipDistrictDashboardStyle(
-                            patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
+  const html = patchLeadershipKogonSplit(
+    patchLeadershipKTMP(
+      patchLeadershipReferenceLayout(
+        patchLeadershipDistrictCommandCenter(
+          patchLeadershipMedicalLayoutFix(
+            patchLeadershipMedicalCommandCenter(
+              patchLeadershipHistoryStats(
+                patchLeadershipHealthStats(
+                  patchLeadershipViewModes(
+                    patchLeadershipAiForecast(
+                      patchLeadershipDemography(
+                        patchLeadershipDistrictLegend(
+                          patchLeadershipDistrictMapFocus(
+                            patchLeadershipDistrictDashboardStyle(
+                              patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
+                            )
                           )
                         )
                       )
