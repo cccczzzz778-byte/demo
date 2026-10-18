@@ -9,6 +9,7 @@ import { patchLeadershipDistrictMapFocus } from './leadership-district-map-focus
 import { patchLeadershipDistrictLegend } from './leadership-district-legend-patch.ts';
 import { patchLeadershipViewModes } from './leadership-view-modes-patch.ts';
 import { patchLeadershipDemography } from './leadership-demography-patch.ts';
+import { patchLeadershipAiForecast } from './leadership-ai-forecast-patch.ts';
 import { UPLOADED_LEADERSHIP_HTML } from './leadership-uploaded-source.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
@@ -16,11 +17,13 @@ const nativeServe = Bun.serve.bind(Bun);
 function renderUploadedLeadership() {
   const nonce = randomBytes(16).toString('base64');
   const html = patchLeadershipViewModes(
-    patchLeadershipDemography(
-      patchLeadershipDistrictLegend(
-        patchLeadershipDistrictMapFocus(
-          patchLeadershipDistrictDashboardStyle(
-            patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
+    patchLeadershipAiForecast(
+      patchLeadershipDemography(
+        patchLeadershipDistrictLegend(
+          patchLeadershipDistrictMapFocus(
+            patchLeadershipDistrictDashboardStyle(
+              patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
+            )
           )
         )
       )
@@ -54,6 +57,68 @@ function renderUploadedLeadership() {
   return new Response(html, { status: 200, headers });
 }
 
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      'x-content-type-options': 'nosniff',
+    },
+  });
+}
+
+function extractResponseText(payload: any) {
+  if (typeof payload?.output_text === 'string' && payload.output_text.trim()) return payload.output_text.trim();
+  const parts: string[] = [];
+  for (const item of payload?.output || []) {
+    for (const content of item?.content || []) {
+      if (typeof content?.text === 'string') parts.push(content.text);
+    }
+  }
+  return parts.join('\n').trim();
+}
+
+async function handleAiForecast(request: Request) {
+  const apiKey = Bun.env.OPENAI_API_KEY || Bun.env.AI_API_KEY;
+  const model = Bun.env.AI_MODEL || 'gpt-6-luna';
+  if (!apiKey) return jsonResponse({ enabled: false, error: 'AI_NOT_CONFIGURED' }, 503);
+
+  try {
+    const body = await request.json();
+    const prompt = [
+      'Siz Buxoro viloyati sog‘liqni saqlash boshqarmasi dashboardi uchun demografik tahlilchisiz.',
+      'Faqat berilgan raqamlarga tayangan holda o‘zbek lotinida 2-3 qisqa gap yozing.',
+      'Yangi raqam o‘ylab topmang. Prognoz taxminiy ekanini aniq ayting.',
+      'Tug‘ilish, o‘lim va tabiiy o‘sish trendidan eng muhim xavf yoki ijobiy signalni ko‘rsating.',
+      `Hudud: ${String(body?.name || 'Buxoro viloyati')}`,
+      `Ma’lumot: ${JSON.stringify(body?.data || {})}`,
+      `Statistik prognoz: ${JSON.stringify(body?.forecast || {})}`,
+    ].join('\n');
+
+    const upstream = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ model, input: prompt }),
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!upstream.ok) {
+      console.error('AI_FORECAST_UPSTREAM_FAILED', upstream.status, (await upstream.text()).slice(0, 500));
+      return jsonResponse({ enabled: true, error: 'AI_UPSTREAM_FAILED' }, 502);
+    }
+    const result = await upstream.json();
+    const analysis = extractResponseText(result);
+    if (!analysis) return jsonResponse({ enabled: true, error: 'AI_EMPTY_RESPONSE' }, 502);
+    return jsonResponse({ enabled: true, model, analysis });
+  } catch (e) {
+    console.error('AI_FORECAST_FAILED', e instanceof Error ? e.message : String(e));
+    return jsonResponse({ enabled: true, error: 'AI_FORECAST_FAILED' }, 500);
+  }
+}
+
 function allowScoped3dEmbedding(headers: Headers, pathname: string) {
   const isMapDocument = pathname === '/leadership' || pathname === '/map';
   const isHtmlPage = (headers.get('content-type') || '').includes('text/html');
@@ -82,6 +147,9 @@ Bun.serve = function districtUxServe(options: any) {
       const pathname = new URL(request.url).pathname;
       if (request.method === 'GET' && pathname === '/leadership') {
         return renderUploadedLeadership();
+      }
+      if (request.method === 'POST' && pathname === '/api/ai-forecast') {
+        return handleAiForecast(request);
       }
 
       const response = await innerFetch(request, server);
