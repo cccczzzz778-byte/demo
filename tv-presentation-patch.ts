@@ -88,7 +88,7 @@ const SCRIPT=`
 export function patchTvPresentationModes(html:string):string{
   if(!html||html.includes(TV_PRESENTATION_PATCH_MARKER))return html;
   let out=html;
-  out=out.replace('</style>',`${STYLE}</style>`);
+  out=out.replace('</head>',`${STYLE}</head>`);
   out=out.replace('<div id="tip"></div><div class="btns">','<div id="tip"></div><div class="btns">'+CONTROLS);
   out=out.replace('</body>',`<!-- ${TV_PRESENTATION_PATCH_MARKER} -->${SCRIPT}</body>`);
   return out;
