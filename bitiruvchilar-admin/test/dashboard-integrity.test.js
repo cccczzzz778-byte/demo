@@ -24,7 +24,7 @@ test('public health summary counts unique examined graduates',()=>{
 
 test('map hover fixer is scoped to tooltip and cannot resize the map container',()=>{
   const js=fs.readFileSync(path.join(__dirname,'../public/map-hover-fix.js'),'utf8');
-  assert.match(js,/querySelectorAll\(['"]#map \\.tip['"]\)/);
+  assert.match(js,/querySelectorAll\(['"]#map \.tip['"]\)/);
   assert.doesNotMatch(js,/querySelectorAll\(['"]div['"]\)/);
 });
 
