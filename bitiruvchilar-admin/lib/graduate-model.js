@@ -18,6 +18,7 @@ function deriveHealthStatus(row={}){
   const explicit=norm(row.health_status);
   if(/soglom|соглом/.test(explicit))return 'Sog‘lom';
   if(/kasal|бемор|касал/.test(explicit))return 'Kasal';
+  if(/aniqlanmagan|аниқланмаган|unknown|boshqa holat/.test(explicit))return 'Aniqlanmagan';
   const dx=norm(row.diagnosis||row.tashxis);
   if(/soglom|соглом/.test(dx))return 'Sog‘lom';
   if(dx)return 'Kasal';
@@ -31,7 +32,7 @@ function matchGraduateKey(row={}){
 }
 function aggregateGraduateRows(rows=[],filterHudud=''){
   const out={
-    total:0,higher:0,nonHigher:0,working:0,unemployed:0,examined:0,healthy:0,sick:0,
+    total:0,higher:0,nonHigher:0,working:0,unemployed:0,examined:0,healthy:0,sick:0,healthOther:0,
     education:{otm:0,technical:0,lyceum:0,school:0,unknown:0},
     gender:{male:0,female:0,unknown:0},
     employmentBreakdown:{publicSector:0,privateSector:0,lawEnforcement:0,entrepreneur:0,credit:0,nextEducation:0,migration:0,selfEmployed:0,vocational:0,childcare:0,unemployed:0,deceased:0,prison:0,other:0,unknown:0},
@@ -64,8 +65,8 @@ function aggregateGraduateRows(rows=[],filterHudud=''){
     else if(/kasb hunar|касб хунар|касб-хунар/.test(h))eb.vocational++;
     else if(/2 yoshgacha|2 ешгача|2 ёшгача/.test(h))eb.childcare++;
     else if(emp==='Ishlaydi')eb.other++;else eb.unknown++;
-    if(String(row.medical_exam_date||row.korik_sana||'').trim())out.examined++;
-    const hs=deriveHealthStatus(row);if(hs==='Sog‘lom')out.healthy++;if(hs==='Kasal')out.sick++;
+    const examined=Boolean(String(row.medical_exam_date||row.korik_sana||'').trim());if(examined)out.examined++;
+    const hs=deriveHealthStatus(row);if(hs==='Sog‘lom')out.healthy++;else if(hs==='Kasal')out.sick++;else if(examined)out.healthOther++;
     if(Number(row.ambulatory)||0)out.healthPathways.ambulatory++;if(Number(row.inpatient)||0)out.healthPathways.inpatient++;if(Number(row.operative)||0)out.healthPathways.operative++;if(Number(row.wellness_district)||0)out.healthPathways.district++;if(Number(row.wellness_region)||0)out.healthPathways.region++;if(Number(row.wellness_republic)||0)out.healthPathways.republic++;
     const med=Boolean(row.medical_education===true||row.medical_education===1||row.medical_education==='1'||norm(row.medical_education)==='ha');if(med){out.medicalEducation.total++;const ml=normalizeEducationLevel(row.medical_education_level);if(ml==='OTM')out.medicalEducation.otm++;else if(ml==='Texnikum')out.medicalEducation.technical++;}
     const d=String(row.diagnosis_category||row.diagnosis||row.tashxis||'').trim();if(hs==='Kasal'&&d)diag.set(d,(diag.get(d)||0)+1);
