@@ -1,7 +1,7 @@
 export const TV_PRESENTATION_PATCH_MARKER='BUXORO_SSB_TV_PRESENTATION_V1';
 
 const STYLE=`
-<style>
+<style nonce="__CSP_NONCE__">
 body.dashboard-tv-mode #M,
 body.dashboard-tv-mode #R,
 body.dashboard-tv-mode .nt{display:none!important}
@@ -27,7 +27,7 @@ body.dashboard-presentation-mode #presentationStatus{display:block}
 const CONTROLS=`<button id="tvModeBtn" type="button">▣ TV rejim</button><button id="presentationModeBtn" type="button">▶ Taqdimot</button><button id="normalModeBtn" type="button" hidden>↩ Oddiy rejim</button>`;
 
 const SCRIPT=`
-<script>
+<script nonce="__CSP_NONCE__">
 (()=>{
  const PRESENTATION_INTERVAL_MS=10000;
  const tvBtn=document.getElementById('tvModeBtn');
