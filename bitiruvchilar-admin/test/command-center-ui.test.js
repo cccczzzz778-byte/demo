@@ -51,6 +51,15 @@ test('smart map exposes mount and scoped selection behavior',()=>{
   assert.match(js,/Enter|Space/);
 });
 
+test('smart map keeps interactive descendants accessible and does not fake missing counts as zero',()=>{
+  const js=read('command-center-map.js');
+  assert.match(js,/role:'group'/);
+  assert.doesNotMatch(js,/role:'img'/);
+  assert.doesNotMatch(js,/Number\(v\)\|\|0/);
+  assert.match(js,/v===undefined/);
+  assert.ok(js.includes('—'));
+});
+
 test('command center controller uses same-origin scoped APIs and safe DOM rendering',()=>{
   const js=read('command-center.js');
   assert.match(js,/['"]\/api\/command-center['"]/);
