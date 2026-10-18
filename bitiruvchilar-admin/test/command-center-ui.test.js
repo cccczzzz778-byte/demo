@@ -73,15 +73,23 @@ test('command center controller distinguishes auth errors and degrades derived s
   assert.match(js,/encodeURIComponent/);
 });
 
-test('canonical server exposes authenticated command center page and fixed local assets',()=>{
+test('hardened gateway exposes authenticated command center page and fixed local assets',()=>{
+  const gateway=fs.readFileSync(path.join(root,'medical-dashboard-gateway.js'),'utf8');
+  assert.match(gateway,/p===['"]\/command-center['"]/);
+  assert.match(gateway,/command-center\.html/);
+  assert.match(gateway,/command-center\.css/);
+  assert.match(gateway,/command-center-map\.js/);
+  assert.match(gateway,/command-center\.js/);
+  assert.match(gateway,/await authenticated\(req\)/);
+  assert.match(gateway,/COMMAND_CENTER_ASSETS/);
+  assert.match(gateway,/hardenedHeaders/);
+  assert.match(gateway,/p==='\/'\|\|p==='\/dashboard'\|\|p==='\/dashboard\.html'/);
+});
+
+test('canonical server keeps command center APIs and existing health route',()=>{
   const server=fs.readFileSync(path.join(root,'canonical-server-v2.js'),'utf8');
-  assert.match(server,/p===['"]\/command-center['"]/);
-  assert.match(server,/command-center\.html/);
-  assert.match(server,/command-center\.css/);
-  assert.match(server,/command-center-map\.js/);
-  assert.match(server,/command-center\.js/);
-  assert.match(server,/await auth\(req\)/);
-  assert.match(server,/p==='\/'\|\|p==='\/dashboard'\|\|p==='\/dashboard\.html'/);
+  assert.match(server,/p==='\/api\/command-center'/);
+  assert.match(server,/p==='\/api\/command-center\/territory'/);
   assert.match(server,/p==='\/health'/);
 });
 
