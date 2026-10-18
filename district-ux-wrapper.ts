@@ -15,24 +15,27 @@ import { patchLeadershipHistoryStats } from './leadership-history-stats-patch.ts
 import { patchLeadershipMedicalCommandCenter } from './leadership-medical-command-center-patch.ts';
 import { patchLeadershipMedicalLayoutFix } from './leadership-medical-layout-fix-patch.ts';
 import { patchLeadershipDistrictCommandCenter } from './leadership-district-command-center-patch.ts';
+import { patchLeadershipReferenceLayout } from './leadership-reference-layout-patch.ts';
 import { UPLOADED_LEADERSHIP_HTML } from './leadership-uploaded-source.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
 function renderUploadedLeadership() {
   const nonce = randomBytes(16).toString('base64');
-  const html = patchLeadershipDistrictCommandCenter(
-    patchLeadershipMedicalLayoutFix(
-      patchLeadershipMedicalCommandCenter(
-        patchLeadershipHistoryStats(
-          patchLeadershipHealthStats(
-            patchLeadershipViewModes(
-              patchLeadershipAiForecast(
-                patchLeadershipDemography(
-                  patchLeadershipDistrictLegend(
-                    patchLeadershipDistrictMapFocus(
-                      patchLeadershipDistrictDashboardStyle(
-                        patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
+  const html = patchLeadershipReferenceLayout(
+    patchLeadershipDistrictCommandCenter(
+      patchLeadershipMedicalLayoutFix(
+        patchLeadershipMedicalCommandCenter(
+          patchLeadershipHistoryStats(
+            patchLeadershipHealthStats(
+              patchLeadershipViewModes(
+                patchLeadershipAiForecast(
+                  patchLeadershipDemography(
+                    patchLeadershipDistrictLegend(
+                      patchLeadershipDistrictMapFocus(
+                        patchLeadershipDistrictDashboardStyle(
+                          patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
+                        )
                       )
                     )
                   )
