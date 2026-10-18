@@ -19,8 +19,14 @@ test('legacy operator becomes canonical territory-scoped ttb_shtb',()=>{
 });
 
 test('op_oshp without institution remains least privilege',()=>{
-  assert.deepEqual(resolveScope({role:'op_oshp',hudud:'Romitan'}),{role:'op_oshp',all:false,hudud:'Ромитан тумани',institution:'',readOnly:false});
-  assert.deepEqual(applyScopeToFilters(resolveScope({role:'op_oshp',hudud:'Romitan'}),{hudud:'Buxoro shahri',op_oshp:'Other'}),{hudud:'Ромитан тумани',op_oshp:'__none__'});
+  const scope=resolveScope({role:'op_oshp',hudud:'Romitan'});
+  assert.deepEqual(scope,{role:'op_oshp',all:false,hudud:'Ромитан тумани',institution:'',readOnly:false});
+  assert.deepEqual(applyScopeToFilters(scope,{hudud:'Buxoro shahri',op_oshp:'Other'}),{hudud:'Ромитан тумани',op_oshp:'__none__'});
+  assert.equal(canWrite(scope),false);
+});
+
+test('territory role without hudud cannot write',()=>{
+  assert.equal(canWrite(resolveScope({role:'ttb_shtb'})),false);
 });
 
 test('unknown role defaults to none and read-only',()=>{
