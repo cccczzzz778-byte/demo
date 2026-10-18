@@ -1,12 +1,12 @@
 {
   "name":"bitiruvchilar-admin",
-  "version":"2.0.0",
+  "version":"2.1.0",
   "description":"Buxoro viloyati bitiruvchilari — full admin va 3D dashboard",
-  "main":"canonical-server-v2.js",
+  "main":"medical-dashboard-gateway.js",
   "scripts":{
-    "start":"npm run check && node --no-warnings backup-db-env.js && node --no-warnings rebuild-real-data-env.js && node --no-warnings canonical-server-v2.js",
+    "start":"npm run check && node --no-warnings backup-db-env.js && node --no-warnings rebuild-real-data-env.js && node --no-warnings medical-dashboard-gateway.js",
     "test":"node --test normalize-hudud.test.js test/*.test.js",
-    "check":"node --check canonical-server-v2.js && node --check server.js && node --check backup-db-env.js && node --check rebuild-real-data-env.js && node --check public/login.js && node --check public/excel-panel.js && node --check public/dashboard-metrics.js && node --check public/dashboard-summary.js && node --check lib/graduate-utils.js && node --check lib/graduate-model.js && node --check lib/graduate-db.js && node --check lib/import-graduates.js && node --check lib/graduate-service.js && node --check lib/dashboard-summary.js && node --check lib/source-aggregates.js && node --check lib/run-real-rebuild.js && npm test"
+    "check":"node --check medical-dashboard-gateway.js && node --check canonical-server-v2.js && node --check server.js && node --check backup-db-env.js && node --check rebuild-real-data-env.js && node --check public/login.js && node --check public/excel-panel.js && node --check public/dashboard-metrics.js && node --check public/dashboard-summary.js && node --check public/medical-mode.js && node --check lib/graduate-utils.js && node --check lib/graduate-model.js && node --check lib/graduate-db.js && node --check lib/import-graduates.js && node --check lib/graduate-service.js && node --check lib/dashboard-summary.js && node --check lib/dashboard-mode.js && node --check lib/source-aggregates.js && node --check lib/run-real-rebuild.js && npm test"
   },
   "engines":{"node":">=22.13"},
   "dependencies":{"express":"5.1.0"}
