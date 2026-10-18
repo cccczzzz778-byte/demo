@@ -13,22 +13,25 @@ import { patchLeadershipAiForecast } from './leadership-ai-forecast-patch.ts';
 import { patchLeadershipHealthStats } from './leadership-health-stats-patch.ts';
 import { patchLeadershipHistoryStats } from './leadership-history-stats-patch.ts';
 import { patchLeadershipMedicalCommandCenter } from './leadership-medical-command-center-patch.ts';
+import { patchLeadershipMedicalLayoutFix } from './leadership-medical-layout-fix-patch.ts';
 import { UPLOADED_LEADERSHIP_HTML } from './leadership-uploaded-source.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 
 function renderUploadedLeadership() {
   const nonce = randomBytes(16).toString('base64');
-  const html = patchLeadershipMedicalCommandCenter(
-    patchLeadershipHistoryStats(
-      patchLeadershipHealthStats(
-        patchLeadershipViewModes(
-          patchLeadershipAiForecast(
-            patchLeadershipDemography(
-              patchLeadershipDistrictLegend(
-                patchLeadershipDistrictMapFocus(
-                  patchLeadershipDistrictDashboardStyle(
-                    patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
+  const html = patchLeadershipMedicalLayoutFix(
+    patchLeadershipMedicalCommandCenter(
+      patchLeadershipHistoryStats(
+        patchLeadershipHealthStats(
+          patchLeadershipViewModes(
+            patchLeadershipAiForecast(
+              patchLeadershipDemography(
+                patchLeadershipDistrictLegend(
+                  patchLeadershipDistrictMapFocus(
+                    patchLeadershipDistrictDashboardStyle(
+                      patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
+                    )
                   )
                 )
               )
