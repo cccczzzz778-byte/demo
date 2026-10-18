@@ -62,3 +62,12 @@ test('derived failures degrade to unavailable while base metrics remain',()=>{
   assert.deepEqual(out.dataQuality,{unavailable:true});
   db.close();
 });
+
+test('works with production schema that has no updated_at column',()=>{
+  const db=new DatabaseSync(':memory:');
+  db.exec(`CREATE TABLE excel_graduates(id INTEGER PRIMARY KEY,fio TEXT,pinfl TEXT,hudud TEXT,op_oshp TEXT,education_level TEXT,employment_status TEXT,medical_exam_date TEXT)`);
+  db.prepare('INSERT INTO excel_graduates VALUES(?,?,?,?,?,?,?,?)').run(1,'A','44444444444444','Ромитан тумани','1-OP','OTM','Band','2026-10-01');
+  const out=buildCommandCenter(db,resolveScope({role:'leadership'}));
+  assert.equal(out.metrics.total,1);
+  db.close();
+});
