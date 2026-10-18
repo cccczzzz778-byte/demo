@@ -8,6 +8,7 @@ import { patchLeadershipDistrictDashboardStyle } from './leadership-district-das
 import { patchLeadershipDistrictMapFocus } from './leadership-district-map-focus-patch.ts';
 import { patchLeadershipDistrictLegend } from './leadership-district-legend-patch.ts';
 import { patchLeadershipViewModes } from './leadership-view-modes-patch.ts';
+import { patchLeadershipDemography } from './leadership-demography-patch.ts';
 import { UPLOADED_LEADERSHIP_HTML } from './leadership-uploaded-source.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
@@ -15,10 +16,12 @@ const nativeServe = Bun.serve.bind(Bun);
 function renderUploadedLeadership() {
   const nonce = randomBytes(16).toString('base64');
   const html = patchLeadershipViewModes(
-    patchLeadershipDistrictLegend(
-      patchLeadershipDistrictMapFocus(
-        patchLeadershipDistrictDashboardStyle(
-          patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
+    patchLeadershipDemography(
+      patchLeadershipDistrictLegend(
+        patchLeadershipDistrictMapFocus(
+          patchLeadershipDistrictDashboardStyle(
+            patchLeadershipDistrictSwitch(UPLOADED_LEADERSHIP_HTML)
+          )
         )
       )
     )
