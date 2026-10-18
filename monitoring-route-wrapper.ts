@@ -1,6 +1,5 @@
 import { randomBytes } from 'node:crypto';
 import { prepareMonitoringDashboardHtml } from './monitoring-template.ts';
-import { patchTvPresentationMode } from './tv-presentation-mode-patch.ts';
 
 const nativeServe = Bun.serve.bind(Bun);
 const THREE_ASSET_PATH='/assets/three-r128.min.js';
@@ -33,7 +32,9 @@ function monitoringHeaders(source: Headers, nonce: string) {
   const headers = new Headers(source);
   headers.delete('content-length');
   headers.set('content-type','text/html; charset=utf-8');
-  headers.set('cache-control','no-store');
+  headers.set('cache-control','no-store, no-cache, must-revalidate');
+  headers.set('pragma','no-cache');
+  headers.set('expires','0');
   headers.set('x-content-type-options','nosniff');
   headers.set('referrer-policy','same-origin');
   headers.set('x-frame-options','SAMEORIGIN');
@@ -84,7 +85,7 @@ Bun.serve=function monitoringRouteServe(options:any){
         const contentType=response?.headers?.get?.('content-type')||'';
         if(request.method==='GET'&&pathname==='/leadership'&&response instanceof Response&&response.status>=200&&response.status<300&&contentType.includes('text/html')){
           const nonce=randomBytes(16).toString('base64');
-          const html=patchTvPresentationMode(prepareMonitoringDashboardHtml(nonce),nonce);
+          const html=prepareMonitoringDashboardHtml(nonce);
           return new Response(html,{status:response.status,statusText:response.statusText,headers:monitoringHeaders(response.headers,nonce)});
         }
       }catch(e){
