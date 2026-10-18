@@ -17,14 +17,19 @@ const DISPLAY={
   'Қоровулбозор тумани':'Qorovulbozor tumani'
 };
 
-// Ko‘rik sanasi haqiqatan kiritilgan yozuvlar soni. Bu qiymatlar 9 823
-// bitiruvchining ichidagi JSHSHIR bo‘yicha bog‘langan tibbiy ko‘riklardan olinadi.
+// Tibbiy ko‘rik natijalari bir shaxs bir marta tamoyili bilan JSHSHIR+F.I.O.
+// bo‘yicha takrorlardan tozalangan. Jami bitiruvchi nazorat soni 9 823 bo‘lib qoladi.
 const EXAMINED={
+  'Бухоро тумани':957,
+  'Бухоро шаҳар':1361,
   'Когон шаҳар':274,
   'Жондор тумани':906,
+  'Олот тумани':466,
   'Пешку тумани':485,
-  'Қоракўл тумани':872,
-  'Ромитан тумани':604
+  'Ромитан тумани':604,
+  'Шофиркон тумани':814,
+  'Ғиждувон тумани':1624,
+  'Қоракўл тумани':872
 };
 
 const num=v=>Number(v)||0;
@@ -47,7 +52,7 @@ function buildRankingSummary(){
   const exam=maxBy(hududlar.filter(x=>x.examined>0),x=>x.total?x.examined/x.total:-1);
   const sick=maxBy(hududlar,x=>x.sick);
   return {
-    source:'9 823 bitiruvchi va JSHSHIR bo‘yicha bog‘langan tibbiy ko‘riklar',
+    source:'9 823 bitiruvchi va takrorlardan tozalangan tibbiy ko‘riklar',
     hududlar,
     winners:{
       employment:{name:employment.name,value:percent(employment.working,employment.total)},
