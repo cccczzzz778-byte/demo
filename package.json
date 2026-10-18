@@ -9,6 +9,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "postgres": "^3.4.7"
+    "postgres": "^3.4.7",
+    "three": "0.128.0"
   }
 }
