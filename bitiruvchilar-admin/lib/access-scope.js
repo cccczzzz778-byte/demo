@@ -33,6 +33,11 @@ function applyScopeToFilters(scope,filters={}){
   return out;
 }
 
-function canWrite(scope){return Boolean(scope&&!scope.readOnly&&scope.role!=='none')}
+function canWrite(scope){
+  if(!scope||scope.readOnly||scope.role==='none')return false;
+  if(scope.role==='ttb_shtb'&&!scope.hudud)return false;
+  if(scope.role==='op_oshp'&&(!scope.hudud||!scope.institution))return false;
+  return true;
+}
 
 module.exports={normalizeRole,resolveScope,applyScopeToFilters,canWrite};
