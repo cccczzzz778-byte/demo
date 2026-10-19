@@ -6,8 +6,13 @@ const TO='D nazoratda turgan';
 function ensureMigrationTable(db){
   db.exec("CREATE TABLE IF NOT EXISTS app_migrations(key TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now')), details TEXT NOT NULL DEFAULT '')");
 }
+function hasRequiredColumns(db){
+  const cols=new Set(db.prepare('PRAGMA table_info(excel_graduates)').all().map(x=>x.name));
+  return cols.has('employment_status')&&cols.has('holat');
+}
 function correctDControlMisclassification(db){
   ensureMigrationTable(db);
+  if(!hasRequiredColumns(db))return{applied:false,count:0,reason:'schema-incomplete'};
   if(db.prepare('SELECT 1 FROM app_migrations WHERE key=?').get(MIGRATION_KEY))return{applied:false,count:0,reason:'already-applied'};
   const rows=db.prepare('SELECT * FROM excel_graduates WHERE employment_status=? OR holat=? ORDER BY id').all(FROM,FROM);
   const count=rows.length;
