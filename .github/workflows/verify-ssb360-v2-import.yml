@@ -1,0 +1,36 @@
+name: Verify SSB360 v2 import
+
+on:
+  push:
+    branches:
+      - 'import/ssb360-v2'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout import branch
+        uses: actions/checkout@v4
+      - name: Rebuild uploaded ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .import/chunk-*.b64 | base64 -d > /tmp/ssb360.zip
+          echo '51aaaa605e0a7b7f98cdc86994142d0f274fd6610c6e5ef878d77fceca744dbc  /tmp/ssb360.zip' | sha256sum -c -
+          mkdir -p /tmp/ssb360
+          unzip -q /tmp/ssb360.zip -d /tmp/ssb360
+      - name: Install dependencies
+        working-directory: /tmp/ssb360
+        run: npm ci --no-audit --no-fund
+      - name: Run tests
+        working-directory: /tmp/ssb360
+        run: npm test
+      - name: Build
+        working-directory: /tmp/ssb360
+        run: npm run build
+      - name: Audit production dependencies
+        working-directory: /tmp/ssb360
+        run: npm audit --omit=dev --audit-level=high
