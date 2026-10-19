@@ -6,7 +6,8 @@
   "packageManager": "bun@1.2.23",
   "scripts": {
     "start": "bun monitoring-entry.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "test:security": "bun test tests/rbac-store.test.ts tests/admin-monitor-store.test.ts tests/super-admin-api.test.ts"
   },
   "dependencies": {
     "postgres": "^3.4.7",
