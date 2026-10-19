@@ -41,6 +41,16 @@ test('smart map defines the 13 canonical Buxoro territories and no personal fiel
   assert.doesNotMatch(js,/pinfl|jshshir|telefon|diagnosis|tashxis/i);
 });
 
+test('Kogon city and district map targets do not overlap',()=>{
+  const js=read('command-center-map.js');
+  const city=js.match(/hudud:'Когон шаҳар',key:'kogon-shahri',x:(\d+),y:(\d+)/);
+  const district=js.match(/hudud:'Когон тумани',key:'kogon-tumani',x:(\d+),y:(\d+)/);
+  assert.ok(city,'Kogon city coordinates missing');
+  assert.ok(district,'Kogon district coordinates missing');
+  const distance=Math.hypot(Number(city[1])-Number(district[1]),Number(city[2])-Number(district[2]));
+  assert.ok(distance>=72,`Kogon city/district click targets overlap: distance=${distance.toFixed(1)}`);
+});
+
 test('smart map exposes mount and scoped selection behavior',()=>{
   const js=read('command-center-map.js');
   assert.match(js,/CommandCenterMap\s*=\s*Object\.freeze/);
