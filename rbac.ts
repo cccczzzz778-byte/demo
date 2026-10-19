@@ -1,7 +1,7 @@
 export type AccessRole = 'SUPER_ADMIN' | 'ADMIN' | 'CONTROL_ADMIN' | 'FACILITY';
 export type ScopeType = 'province' | 'district' | 'facility';
 export type ControlMode = 'active' | 'viewer' | null;
-export type RbacAction = 'VIEW' | 'CREATE_CREDENTIAL' | 'RESET_CREDENTIAL' | 'SET_ACTIVE' | 'ASSIGN_ADMIN' | 'MANAGE_SESSION' | 'MANAGE_HIERARCHY';
+export type RbacAction = 'VIEW' | 'EDIT_FACILITY_DATA' | 'CREATE_CREDENTIAL' | 'RESET_CREDENTIAL' | 'SET_ACTIVE' | 'ASSIGN_ADMIN' | 'MANAGE_SESSION' | 'MANAGE_HIERARCHY';
 
 export type AccessProfile = {
   username: string;
@@ -41,14 +41,15 @@ export function authorize(profile: AccessProfile, action: RbacAction, target: Re
   if (profile.role === 'SUPER_ADMIN') return { allowed: true, reason: 'super-admin' };
 
   if (profile.role === 'FACILITY') {
-    const own = action === 'VIEW' && !!profile.facilityId && target.facilityId === profile.facilityId;
-    return { allowed: own, reason: own ? 'own-facility' : 'facility-role-denied' };
+    const ownFacility = !!profile.facilityId && target.facilityId === profile.facilityId;
+    const allowed = ownFacility && (action === 'VIEW' || action === 'EDIT_FACILITY_DATA');
+    return { allowed, reason: allowed ? 'own-facility' : 'facility-role-denied' };
   }
 
   if (profile.role === 'ADMIN') {
     if (profile.scopeType !== 'district' || !districtMatches(profile.districtId, target.district)) return { allowed: false, reason: 'district-scope-mismatch' };
     if (target.isDpm) return { allowed: false, reason: 'dpm-super-admin-only' };
-    const allowed = action === 'VIEW' || action === 'CREATE_CREDENTIAL' || action === 'RESET_CREDENTIAL' || action === 'SET_ACTIVE' || action === 'MANAGE_HIERARCHY';
+    const allowed = action === 'VIEW' || action === 'EDIT_FACILITY_DATA' || action === 'CREATE_CREDENTIAL' || action === 'RESET_CREDENTIAL' || action === 'SET_ACTIVE' || action === 'MANAGE_HIERARCHY';
     return { allowed, reason: allowed ? 'district-admin' : 'admin-action-denied' };
   }
 
@@ -58,7 +59,7 @@ export function authorize(profile: AccessProfile, action: RbacAction, target: Re
     if (action === 'VIEW') return { allowed: true, reason: 'control-view' };
     if (profile.controlMode !== 'active') return { allowed: false, reason: 'viewer-read-only' };
     if (target.isDpm) return { allowed: false, reason: 'dpm-super-admin-only' };
-    const allowed = action === 'CREATE_CREDENTIAL' || action === 'RESET_CREDENTIAL' || action === 'SET_ACTIVE';
+    const allowed = action === 'EDIT_FACILITY_DATA' || action === 'CREATE_CREDENTIAL' || action === 'RESET_CREDENTIAL' || action === 'SET_ACTIVE';
     return { allowed, reason: allowed ? 'control-active' : 'control-action-denied' };
   }
 
