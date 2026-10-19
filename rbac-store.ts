@@ -56,6 +56,30 @@ export async function ensureRbacSchema(sql: SqlTag) {
       (role='FACILITY' AND scope_type='facility' AND district_id IS NULL AND facility_id IS NOT NULL AND control_mode IS NULL)
     )
   )`;
+
+  -- Existing installations were created before FACILITY/facility were valid values.
+  -- Remove only the original generated checks, then replace them with stable v2 checks.
+  await sql`ALTER TABLE app_access_profiles
+    DROP CONSTRAINT IF EXISTS app_access_profiles_role_check,
+    DROP CONSTRAINT IF EXISTS app_access_profiles_scope_type_check,
+    DROP CONSTRAINT IF EXISTS app_access_profiles_check`;
+  await sql`DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='app_access_profiles_role_check_v2' AND conrelid='app_access_profiles'::regclass) THEN
+      ALTER TABLE app_access_profiles ADD CONSTRAINT app_access_profiles_role_check_v2 CHECK(role IN ('SUPER_ADMIN','ADMIN','CONTROL_ADMIN','FACILITY'));
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='app_access_profiles_scope_type_check_v2' AND conrelid='app_access_profiles'::regclass) THEN
+      ALTER TABLE app_access_profiles ADD CONSTRAINT app_access_profiles_scope_type_check_v2 CHECK(scope_type IN ('province','district','facility'));
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='app_access_profiles_shape_check_v2' AND conrelid='app_access_profiles'::regclass) THEN
+      ALTER TABLE app_access_profiles ADD CONSTRAINT app_access_profiles_shape_check_v2 CHECK(
+        (role='SUPER_ADMIN' AND scope_type='province' AND district_id IS NULL AND facility_id IS NULL AND control_mode IS NULL) OR
+        (role='ADMIN' AND scope_type='district' AND district_id IS NOT NULL AND facility_id IS NULL AND control_mode IS NULL) OR
+        (role='CONTROL_ADMIN' AND scope_type IN ('province','district') AND facility_id IS NULL AND control_mode IN ('active','viewer') AND ((scope_type='province' AND district_id IS NULL) OR (scope_type='district' AND district_id IS NOT NULL))) OR
+        (role='FACILITY' AND scope_type='facility' AND district_id IS NULL AND facility_id IS NOT NULL AND control_mode IS NULL)
+      );
+    END IF;
+  END $$`;
+
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS app_one_super_admin_idx ON app_access_profiles ((role)) WHERE role='SUPER_ADMIN'`;
   await sql`CREATE TABLE IF NOT EXISTS app_admin_audit(
     id text PRIMARY KEY,
