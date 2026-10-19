@@ -4,7 +4,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY .import /archive
-RUN cat /archive/chunk-*.b64 | tr -d '\r\n' | base64 -d > /tmp/app.zip \
+RUN cat /archive/chunk-*.b64 | tr -d '[:space:]' | base64 -d > /tmp/app.zip \
  && echo "51aaaa605e0a7b7f98cdc86994142d0f274fd6610c6e5ef878d77fceca744dbc  /tmp/app.zip" | sha256sum -c - \
  && unzip -q /tmp/app.zip -d /src
 
