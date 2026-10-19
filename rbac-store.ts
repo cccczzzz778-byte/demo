@@ -57,8 +57,8 @@ export async function ensureRbacSchema(sql: SqlTag) {
     )
   )`;
 
-  -- Existing installations were created before FACILITY/facility were valid values.
-  -- Remove only the original generated checks, then replace them with stable v2 checks.
+  // Existing installations were created before FACILITY/facility were valid values.
+  // Remove only the original generated checks, then replace them with stable v2 checks.
   await sql`ALTER TABLE app_access_profiles
     DROP CONSTRAINT IF EXISTS app_access_profiles_role_check,
     DROP CONSTRAINT IF EXISTS app_access_profiles_scope_type_check,
