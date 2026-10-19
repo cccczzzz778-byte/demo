@@ -1,3 +1,4 @@
+# Packaging trigger for latest feature snapshot
 name: Export project ZIP
 
 on:
