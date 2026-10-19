@@ -21,7 +21,7 @@ export function validateAccessProfile(profile: AccessProfile): { ok: true } | { 
     return { ok:true };
   }
   if (profile.role === 'FACILITY') {
-    if (profile.scopeType !== 'facility' || !profile.facilityId) return { ok:false, error:'facility-scope-required' };
+    if (profile.scopeType !== 'facility' || !profile.facilityId || profile.districtId || profile.controlMode) return { ok:false, error:'facility-scope-required' };
     return { ok:true };
   }
   return { ok:false, error:'unknown-role' };
@@ -53,7 +53,7 @@ export async function ensureRbacSchema(sql: SqlTag) {
       (role='SUPER_ADMIN' AND scope_type='province' AND district_id IS NULL AND facility_id IS NULL AND control_mode IS NULL) OR
       (role='ADMIN' AND scope_type='district' AND district_id IS NOT NULL AND facility_id IS NULL AND control_mode IS NULL) OR
       (role='CONTROL_ADMIN' AND scope_type IN ('province','district') AND facility_id IS NULL AND control_mode IN ('active','viewer') AND ((scope_type='province' AND district_id IS NULL) OR (scope_type='district' AND district_id IS NOT NULL))) OR
-      (role='FACILITY' AND scope_type='facility' AND facility_id IS NOT NULL)
+      (role='FACILITY' AND scope_type='facility' AND district_id IS NULL AND facility_id IS NOT NULL AND control_mode IS NULL)
     )
   )`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS app_one_super_admin_idx ON app_access_profiles ((role)) WHERE role='SUPER_ADMIN'`;
@@ -88,6 +88,15 @@ export async function upsertAdminProfile(sql: SqlTag, profile: AccessProfile) {
   await sql`INSERT INTO app_access_profiles(username,role,scope_type,district_id,facility_id,control_mode,active)
     VALUES(${profile.username.toLowerCase()},${profile.role},${profile.scopeType},${profile.districtId},${profile.facilityId},${profile.controlMode},${profile.active})
     ON CONFLICT(username) DO UPDATE SET role=EXCLUDED.role,scope_type=EXCLUDED.scope_type,district_id=EXCLUDED.district_id,facility_id=EXCLUDED.facility_id,control_mode=EXCLUDED.control_mode,active=EXCLUDED.active,updated_at=now()`;
+}
+
+export async function upsertFacilityProfile(sql: SqlTag, profile: AccessProfile) {
+  const valid = validateAccessProfile(profile);
+  if (!valid.ok) throw new Error(valid.error);
+  if (profile.role !== 'FACILITY') throw new Error('facility-profile-required');
+  await sql`INSERT INTO app_access_profiles(username,role,scope_type,district_id,facility_id,control_mode,active)
+    VALUES(${profile.username.toLowerCase()},'FACILITY','facility',NULL,${profile.facilityId},NULL,${profile.active})
+    ON CONFLICT(username) DO UPDATE SET role='FACILITY',scope_type='facility',district_id=NULL,facility_id=EXCLUDED.facility_id,control_mode=NULL,active=EXCLUDED.active,updated_at=now()`;
 }
 
 export async function setProfileActive(sql: SqlTag, username: string, active: boolean) {
