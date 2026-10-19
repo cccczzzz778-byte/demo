@@ -8,17 +8,25 @@ const root=path.join(__dirname,'..');
 
 test('admin graduate table exposes an explicit edit action and full editor validation',()=>{
   const html=fs.readFileSync(path.join(root,'public','excel-panel.html'),'utf8');
-  const js=fs.readFileSync(path.join(root,'public','excel-panel.js'),'utf8');
-  assert.match(html,/Tahrirlash/);
-  assert.match(js,/data-edit-id/);
-  assert.match(js,/validateForm/);
-  assert.match(js,/14 ta raqam/);
+  const enhance=fs.readFileSync(path.join(root,'public','ui-latin.js'),'utf8');
+  assert.match(enhance,/Tahrirlash/);
+  assert.match(enhance,/data-edit-id/);
+  assert.match(enhance,/validateAdminGraduateForm/);
+  assert.match(enhance,/14 ta raqam/);
   for(const id of ['e-fio','e-pinfl','e-telefon','e-birth','e-hudud','e-mahalla','e-address','e-edu','e-inst','e-spec','e-emp','e-work','e-pos','e-orderdate','e-orderno','e-health','e-examdate','e-diagnosis','e-rec','e-amb','e-inp','e-oper','e-wd','e-wr','e-wrep','e-note']) assert.ok(html.includes(`id="${id}"`),`missing ${id}`);
 });
 
-test('main Excel parser maps source D-control column to D nazoratda turgan',()=>{
-  const js=fs.readFileSync(path.join(root,'public','excel-panel.js'),'utf8');
-  assert.match(js,/if\(num\(r\[36\]\)\)return\{employment_status:'D nazoratda turgan',holat:'D nazoratda turgan'\}/);
+test('main import persists D-control instead of the misclassified deceased status',()=>{
+  const {migrateGraduateDb}=require('../lib/graduate-db');
+  const {mergeMainGraduates}=require('../lib/import-graduates');
+  const db=new DatabaseSync(':memory:');
+  db.exec("CREATE TABLE excel_graduates(id INTEGER PRIMARY KEY AUTOINCREMENT,fio TEXT NOT NULL,hudud TEXT NOT NULL DEFAULT '',mahalla TEXT NOT NULL DEFAULT '',toifa TEXT NOT NULL DEFAULT '',holat TEXT NOT NULL DEFAULT '',op_oshp TEXT NOT NULL DEFAULT '',tugilgan_sana TEXT NOT NULL DEFAULT '',yil TEXT NOT NULL DEFAULT '',yosh TEXT NOT NULL DEFAULT '',jins TEXT NOT NULL DEFAULT '',bitirgan_turi TEXT NOT NULL DEFAULT '',telefon TEXT NOT NULL DEFAULT '',band_qilish_rejasi TEXT NOT NULL DEFAULT '',izoh TEXT NOT NULL DEFAULT '',medical_institution TEXT NOT NULL DEFAULT '',medical_exam_date TEXT NOT NULL DEFAULT '',diagnosis TEXT NOT NULL DEFAULT '',recommendation TEXT NOT NULL DEFAULT '',ambulatory INTEGER NOT NULL DEFAULT 0,inpatient INTEGER NOT NULL DEFAULT 0,operative INTEGER NOT NULL DEFAULT 0,wellness_district INTEGER NOT NULL DEFAULT 0,wellness_region INTEGER NOT NULL DEFAULT 0,wellness_republic INTEGER NOT NULL DEFAULT 0)");
+  migrateGraduateDb(db);
+  mergeMainGraduates(db,[{fio:'Test Bitiruvchi',hudud:'Romitan',employment_status:'Vafot etgan',holat:'Vafot etgan'}]);
+  const row=db.prepare('SELECT employment_status,holat FROM excel_graduates').get();
+  assert.equal(row.employment_status,'D nazoratda turgan');
+  assert.equal(row.holat,'D nazoratda turgan');
+  db.close();
 });
 
 test('one-time correction changes exactly 14 misclassified deceased rows and audits each row',()=>{
