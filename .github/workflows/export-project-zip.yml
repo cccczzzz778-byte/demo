@@ -1,0 +1,26 @@
+name: Export project ZIP
+
+on:
+  push:
+    paths:
+      - '.github/workflows/export-project-zip.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Create project ZIP
+        run: |
+          zip -r buxoro-ssb-dashboard.zip . -x '.git/*' 'buxoro-ssb-dashboard.zip'
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: buxoro-ssb-dashboard
+          path: buxoro-ssb-dashboard.zip
+          retention-days: 1
