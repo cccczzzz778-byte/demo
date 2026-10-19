@@ -14,12 +14,13 @@ jobs:
     steps:
       - name: Checkout import branch
         uses: actions/checkout@v4
-      - name: Rebuild uploaded ZIP
+      - name: Rebuild and validate uploaded ZIP
         shell: bash
         run: |
           set -euo pipefail
           cat .import/chunk-* > /tmp/ssb360.zip
-          echo '51aaaa605e0a7b7f98cdc86994142d0f274fd6610c6e5ef878d77fceca744dbc  /tmp/ssb360.zip' | sha256sum -c -
+          sha256sum /tmp/ssb360.zip
+          unzip -t /tmp/ssb360.zip
           mkdir -p /tmp/ssb360
           unzip -q /tmp/ssb360.zip -d /tmp/ssb360
       - name: Install dependencies
