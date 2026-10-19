@@ -2,13 +2,13 @@
 const NS='http://www.w3.org/2000/svg';
 const TERRITORIES=Object.freeze([
  {hudud:'Бухоро шаҳар',key:'buxoro-shahri',x:430,y:285,label:'Buxoro sh.'},
- {hudud:'Когон шаҳар',key:'kogon-shahri',x:520,y:300,label:'Kogon sh.'},
+ {hudud:'Когон шаҳар',key:'kogon-shahri',x:545,y:275,label:'Kogon sh.'},
  {hudud:'Олот тумани',key:'olot',x:210,y:430,label:'Olot'},
  {hudud:'Бухоро тумани',key:'buxoro-tumani',x:380,y:330,label:'Buxoro t.'},
  {hudud:'Вобкент тумани',key:'vobkent',x:390,y:210,label:'Vobkent'},
  {hudud:'Ғиждувон тумани',key:'gijduvon',x:500,y:165,label:'G‘ijduvon'},
  {hudud:'Жондор тумани',key:'jondor',x:285,y:330,label:'Jondor'},
- {hudud:'Когон тумани',key:'kogon-tumani',x:555,y:345,label:'Kogon t.'},
+ {hudud:'Когон тумани',key:'kogon-tumani',x:610,y:350,label:'Kogon t.'},
  {hudud:'Қоракўл тумани',key:'qorakol',x:340,y:430,label:'Qorako‘l'},
  {hudud:'Қоровулбозор тумани',key:'qorovulbozor',x:675,y:365,label:'Qorovulbozor'},
  {hudud:'Пешку тумани',key:'peshku',x:285,y:215,label:'Peshku'},
