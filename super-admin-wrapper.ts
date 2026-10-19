@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID, scryptSync } from 'node:crypto';
 import postgres from 'postgres';
 import { handleAdminApi, type AdminApiDeps } from './super-admin-api.ts';
-import { appendAdminAudit, bootstrapSuperAdmin, ensureRbacSchema, getProfile, listAdminProfiles, setProfileActive, upsertAdminProfile } from './rbac-store.ts';
+import { appendAdminAudit, bootstrapSuperAdmin, ensureRbacSchema, getProfile, listAdminProfiles, setProfileActive, upsertAdminProfile, upsertFacilityProfile } from './rbac-store.ts';
 import { createSessionHash, ensureMonitorSchema, getRuntimeMetrics, isSessionRevoked, listPresence, recordHttpResult, revokeSession, touchPresence } from './admin-monitor-store.ts';
 import { LegacyAdminContract, normalizeLegacyActor } from './legacy-admin-contract.ts';
 import { renderAdminShell } from './super-admin-ui.ts';
@@ -32,6 +32,8 @@ const deps: AdminApiDeps = {
   getProfile: async (username) => db ? getProfile(db as any, username) : null,
   listAdminProfiles: async () => db ? listAdminProfiles(db as any) : [],
   upsertAdminProfile: async (profile) => { if (!db) throw new Error('DATABASE_UNAVAILABLE'); await upsertAdminProfile(db as any, profile); },
+  upsertFacilityProfile: async (profile) => { if (!db) throw new Error('DATABASE_UNAVAILABLE'); await upsertFacilityProfile(db as any, profile); },
+  setProfileActive: async (username,active) => { if (!db) throw new Error('DATABASE_UNAVAILABLE'); await setProfileActive(db as any, username, active); },
   appendAudit: async (event) => { if (db) await appendAdminAudit(db as any, event); },
   createAdminAccount: async ({ username, password, scope }) => {
     if (!db) throw new Error('DATABASE_UNAVAILABLE');
