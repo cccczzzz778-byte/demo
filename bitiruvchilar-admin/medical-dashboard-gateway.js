@@ -19,6 +19,11 @@ const MAX_BODY_BYTES=64*1024*1024;
 const DISTRICTS=[
  ['Buxoro shahri','Бухоро шаҳар'],['Kogon shahri','Когон шаҳар'],['Olot','Олот тумани'],['Buxoro tumani','Бухоро тумани'],['Vobkent','Вобкент тумани'],["G'ijduvon",'Ғиждувон тумани'],['Jondor','Жондор тумани'],['Kogon tumani','Когон тумани'],["Qorako'l",'Қоракўл тумани'],['Qorovulbozor','Қоровулбозор тумани'],['Peshku','Пешку тумани'],['Romitan','Ромитан тумани'],['Shofirkon','Шофиркон тумани']
 ];
+const COMMAND_CENTER_ASSETS=Object.freeze({
+ '/command-center.css':['command-center.css','text/css; charset=utf-8'],
+ '/command-center-map.js':['command-center-map.js','application/javascript; charset=utf-8'],
+ '/command-center.js':['command-center.js','application/javascript; charset=utf-8']
+});
 const SECURITY_HEADERS={
  'X-Content-Type-Options':'nosniff',
  'X-Frame-Options':'DENY',
@@ -54,6 +59,7 @@ function injectLatin(html){
 function sendHtml(res,up,html){
  const body=Buffer.from(html);const headers=hardenedHeaders({...up.headers,'content-type':'text/html; charset=utf-8','content-length':String(body.length),'cache-control':'no-store'});delete headers['content-encoding'];delete headers['transfer-encoding'];res.writeHead(up.status,headers);res.end(body);
 }
+function sendLocal(res,fileName,type){try{const b=fs.readFileSync(path.join(__dirname,'public',fileName));res.writeHead(200,hardenedHeaders({'Content-Type':type,'Content-Length':b.length,'Cache-Control':'no-store'}));return res.end(b)}catch{return json(res,404,{error:'Topilmadi.'})}}
 function rewriteDashboard(html,mode){
  const normalized=normalizeDashboardMode(mode);
  const re=/<script type="application\/json" id="dash-data">([\s\S]*?)<\/script>/;
@@ -76,6 +82,11 @@ function rewriteDashboard(html,mode){
 const server=http.createServer(async(req,res)=>{
  if(!req.url||req.url.length>MAX_URL_LENGTH)return json(res,414,{error:'URL juda uzun.'});
  let u;try{u=new URL(req.url,'http://local')}catch{return json(res,400,{error:'URL noto‘g‘ri.'})}const p=u.pathname;
+ if(req.method==='GET'&&p==='/command-center'){
+   if(!(await authenticated(req))){res.writeHead(302,hardenedHeaders({'Location':'/login?next=%2Fcommand-center','Cache-Control':'no-store'}));return res.end()}
+   return sendLocal(res,'command-center.html','text/html; charset=utf-8');
+ }
+ if(req.method==='GET'&&COMMAND_CENTER_ASSETS[p]){const [fileName,type]=COMMAND_CENTER_ASSETS[p];return sendLocal(res,fileName,type)}
  if(req.method==='GET'&&['/medical-mode.js','/medical-enhance.js','/ranking-fix.js','/map-hover-fix.js','/ui-latin.js'].includes(p)){try{const f=path.join(__dirname,'public',p.slice(1));const b=fs.readFileSync(f);res.writeHead(200,hardenedHeaders({'Content-Type':'application/javascript; charset=utf-8','Content-Length':b.length,'Cache-Control':'no-store'}));return res.end(b)}catch{return json(res,404,{error:'Topilmadi.'})}}
  if(req.method==='GET'&&p==='/api/public/medical-dashboard')return json(res,200,getMedicalDashboard(u.searchParams.get('hudud')||''));
  if(req.method==='GET'&&p==='/api/public/rankings')return json(res,200,buildRankingSummary());

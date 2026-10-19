@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Buxoro Bitiruvchilar Command Center</title>
+<link rel="stylesheet" href="/command-center.css">
+</head>
+<body>
+<main id="cc-root" class="cc-shell">
+  <header class="cc-header">
+    <div>
+      <p class="cc-kicker">Buxoro viloyati · Bitiruvchilar 2026</p>
+      <h1>Command Center</h1>
+      <p class="cc-subtitle">Rahbariyat uchun hududiy holat, risklar va ma’lumot sifati bo‘yicha o‘qish rejimidagi boshqaruv paneli.</p>
+    </div>
+    <div class="cc-header-actions">
+      <a class="cc-link" href="/dashboard">Mavjud dashboard</a>
+      <a class="cc-link" href="/3d">3D ko‘rinish</a>
+      <button id="cc-refresh" class="cc-button" type="button">Yangilash</button>
+    </div>
+  </header>
+
+  <section id="cc-status" class="cc-status" aria-live="polite">
+    <span class="cc-status-dot" aria-hidden="true"></span>
+    <span>Ma’lumot yuklanmoqda…</span>
+  </section>
+
+  <section id="cc-metrics" class="cc-metrics" aria-label="Asosiy ko‘rsatkichlar">
+    <article class="cc-card"><span>Jami bitiruvchilar</span><strong>—</strong></article>
+    <article class="cc-card"><span>Oliy ma’lumotli</span><strong>—</strong></article>
+    <article class="cc-card"><span>Ishga joylashgan</span><strong>—</strong></article>
+    <article class="cc-card"><span>Ishsiz</span><strong>—</strong></article>
+    <article class="cc-card"><span>Tibbiy ko‘rikdan o‘tgan</span><strong>—</strong></article>
+    <article class="cc-card"><span>Faol risklar</span><strong>—</strong></article>
+  </section>
+
+  <section class="cc-main-grid">
+    <article class="cc-panel cc-map-panel">
+      <div class="cc-panel-head">
+        <div><p class="cc-kicker">13 hudud</p><h2>Buxoro viloyati xaritasi</h2></div>
+        <span class="cc-muted">Hududni tanlang</span>
+      </div>
+      <div class="cc-map-legend" aria-label="Xarita holat belgilari">
+        <span><i class="cc-legend-dot cc-legend-green" aria-hidden="true"></i>Barqaror</span>
+        <span><i class="cc-legend-dot cc-legend-yellow" aria-hidden="true"></i>Diqqat</span>
+        <span><i class="cc-legend-dot cc-legend-red" aria-hidden="true"></i>Kritik</span>
+        <span><i class="cc-legend-dot cc-legend-neutral" aria-hidden="true"></i>Holat berilmagan</span>
+      </div>
+      <div id="cc-map" class="cc-map" role="region" aria-label="Buxoro viloyati hududlari interaktiv xaritasi">
+        <div class="cc-empty">Xarita yuklanmoqda…</div>
+      </div>
+    </article>
+
+    <aside id="cc-territory-panel" class="cc-panel cc-territory-panel" aria-label="Tanlangan hudud tafsilotlari">
+      <div class="cc-panel-head"><div><p class="cc-kicker">Drill-down</p><h2>Hudud tafsiloti</h2></div></div>
+      <div class="cc-empty">Hudud tanlanganda shu yerda ko‘rsatkichlar chiqadi.</div>
+    </aside>
+  </section>
+
+  <section class="cc-bottom-grid">
+    <article id="cc-risks" class="cc-panel">
+      <div class="cc-panel-head"><div><p class="cc-kicker">Nazorat</p><h2>Risklar</h2></div></div>
+      <div class="cc-empty">Risklar yuklanmoqda…</div>
+    </article>
+    <article id="cc-quality" class="cc-panel">
+      <div class="cc-panel-head"><div><p class="cc-kicker">Ma’lumot sifati</p><h2>Sifat nazorati</h2></div></div>
+      <div class="cc-empty">Sifat ko‘rsatkichlari yuklanmoqda…</div>
+    </article>
+  </section>
+</main>
+<script src="/command-center-map.js"></script>
+<script src="/command-center.js"></script>
+</body>
+</html>
