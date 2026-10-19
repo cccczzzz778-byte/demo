@@ -7,6 +7,8 @@ export type AdminApiDeps = {
   getProfile(username: string): Promise<AccessProfile | null>;
   listAdminProfiles(): Promise<AccessProfile[]>;
   upsertAdminProfile(profile: AccessProfile): Promise<void>;
+  upsertFacilityProfile(profile: AccessProfile): Promise<void>;
+  setProfileActive(username: string, active: boolean): Promise<void>;
   appendAudit(event: { id: string; actorUsername: string | null; action: string; target?: string | null; details?: unknown }): Promise<void>;
   createAdminAccount(input: { username: string; password: string; scope: string | null }): Promise<{ id: string; username: string }>;
   listPresence(profile: AccessProfile): Promise<any[]>;
@@ -38,7 +40,7 @@ async function resolveContext(request: Request, innerFetch: InnerFetch, deps: Ad
 }
 function scopeOfInstitution(i: LegacyInstitution): ResourceScope { return { district:i.type==='DPM'?null:(i.scope ?? null), facilityId:i.id, isDpm:i.type === 'DPM' }; }
 function scopeOfUser(u: LegacyUser): ResourceScope { return { district:u.institution_type==='DPM'?null:(u.scope ?? null), facilityId:u.institution_id ?? null, isDpm:u.institution_type === 'DPM' }; }
-function expectedLegacyRole(type:string) { if (type === 'TTB' || type === 'SHTB') return 'TTB_SHTB'; if (type === 'SSB') return 'LEADERSHIP'; if (type === 'DPM' || type === 'OP' || type === 'OSHP') return 'DATA_ENTRY'; return null; }
+function expectedLegacyRole(type:string) { if (type === 'TTB' || type === 'SHTB') return 'TTB_SHTB'; if (type === 'SSB') return 'LEADERSHIP'; if (type === 'DPM' || type === 'OP' || type === 'OSHP' || type === 'KTMP') return 'DATA_ENTRY'; return null; }
 function visible(profile: AccessProfile, scope: ResourceScope) { return authorize(profile,'VIEW',scope).allowed; }
 async function institutions(request: Request, innerFetch: InnerFetch): Promise<LegacyInstitution[]> { const r = await innerJson(innerFetch, request, '/api/v1/institutions'); if (!r.response.ok) return []; return Array.isArray(r.data?.institutions) ? r.data.institutions : []; }
 async function users(request: Request, innerFetch: InnerFetch): Promise<LegacyUser[]> { const r = await innerJson(innerFetch, request, LegacyAdminContract.listUsers); if (!r.response.ok) return []; return Array.isArray(r.data?.users) ? r.data.users : []; }
@@ -48,6 +50,9 @@ function adminProfileFromBody(body:any): AccessProfile | null {
   const scopeType = String(body?.scopeType || '') as AccessProfile['scopeType'];
   const controlMode = role === 'CONTROL_ADMIN' ? String(body?.controlMode || '') as AccessProfile['controlMode'] : null;
   return { username:String(body?.username || '').trim().toLowerCase(), role, scopeType, districtId: body?.districtId ? String(body.districtId) : null, facilityId:null, controlMode, active:true };
+}
+function facilityProfile(username:string,institutionId:string):AccessProfile {
+  return {username:username.trim().toLowerCase(),role:'FACILITY',scopeType:'facility',districtId:null,facilityId:institutionId,controlMode:null,active:true};
 }
 function safeProfileSettings(profile:AccessProfile){return {role:profile.role,scopeType:profile.scopeType,districtId:profile.districtId,controlMode:profile.controlMode,active:profile.active};}
 
@@ -127,8 +132,12 @@ export async function handleAdminApi(request: Request, innerFetch: InnerFetch, d
     const inst = (await institutions(request,innerFetch)).find(i=>i.id===String(body?.institutionId||'')); if (!inst) return j({error:'Muassasa topilmadi'},404);
     const decision = authorize(profile,'CREATE_CREDENTIAL',scopeOfInstitution(inst)); if (!decision.allowed) return j({error:'Forbidden',reason:decision.reason},403);
     const role = expectedLegacyRole(inst.type); if (!role) return j({error:'Bu muassasaga credential berilmaydi'},400);
-    const forwarded = await innerJson(innerFetch,request,LegacyAdminContract.createUser,{method:'POST',body:JSON.stringify({institutionId:inst.id,role,username:String(body?.username||''),password:String(body?.password||'')})});
-    if (forwarded.response.ok) await deps.appendAudit({id:randomUUID(),actorUsername:actor.username,action:'CREDENTIAL_CREATE',target:inst.id,details:{username:String(body?.username||''),institutionId:inst.id}});
+    const requestedUsername=String(body?.username||'').trim().toLowerCase();
+    const forwarded = await innerJson(innerFetch,request,LegacyAdminContract.createUser,{method:'POST',body:JSON.stringify({institutionId:inst.id,role,username:requestedUsername,password:String(body?.password||'')})});
+    if (forwarded.response.ok) {
+      await deps.upsertFacilityProfile(facilityProfile(requestedUsername,inst.id));
+      await deps.appendAudit({id:randomUUID(),actorUsername:actor.username,action:'CREDENTIAL_CREATE',target:inst.id,details:{username:requestedUsername,institutionId:inst.id}});
+    }
     return new Response(await forwarded.response.text(),{status:forwarded.response.status,headers:{'content-type':'application/json; charset=utf-8'}});
   }
   const m = url.pathname.match(/^\/api\/control\/users\/([^/]+)\/(reset|status)$/);
@@ -139,7 +148,10 @@ export async function handleAdminApi(request: Request, innerFetch: InnerFetch, d
     const action = m[2] === 'reset' ? 'RESET_CREDENTIAL' : 'SET_ACTIVE'; const decision = authorize(profile,action,scopeOfUser(target)); if (!decision.allowed) return j({error:'Forbidden',reason:decision.reason},403);
     const bodyText = await request.text(); const path = m[2] === 'reset' ? LegacyAdminContract.resetUser(target.id) : LegacyAdminContract.setUserActive(target.id);
     const forwarded = await innerJson(innerFetch,request,path,{method:'POST',body:bodyText});
-    if (forwarded.response.ok) await deps.appendAudit({id:randomUUID(),actorUsername:actor.username,action:m[2]==='reset'?'CREDENTIAL_RESET':'USER_STATUS',target:target.id});
+    if (forwarded.response.ok) {
+      if(m[2]==='status'&&target.role!=='ADMIN') { try { const status=bodyText?JSON.parse(bodyText):{}; if(typeof status.active==='boolean') await deps.setProfileActive(target.username,status.active); } catch {} }
+      await deps.appendAudit({id:randomUUID(),actorUsername:actor.username,action:m[2]==='reset'?'CREDENTIAL_RESET':'USER_STATUS',target:target.id});
+    }
     return new Response(await forwarded.response.text(),{status:forwarded.response.status,headers:{'content-type':'application/json; charset=utf-8'}});
   }
   return j({error:'Not found'},404);
