@@ -22,7 +22,7 @@ const blankGender=()=>({male:0,female:0,unknown:0});
 const blankEmp=()=>({publicSector:0,privateSector:0,lawEnforcement:0,entrepreneur:0,credit:0,nextEducation:0,migration:0,selfEmployed:0,vocational:0,childcare:0,unemployed:0,deceased:0,prison:0,other:0,unknown:0});
 const blankPlans=()=>({jobPlacement:0,entrepreneurship:0,credit:0,selfEmployment:0,migration:0,vocational:0,homemaker:0,affluentFamily:0,applicant:0,marriedOtherRegion:0});
 const blankHealth=()=>({ambulatory:0,inpatient:0,operative:0,district:0,region:0,republic:0});
-function withDetails(base,key){const d=DETAILS[key]||{};return {...base,education:{...blankEdu(),...(d.education||{})},gender:{...blankGender(),...(d.gender||{})},employmentBreakdown:{...blankEmp(),...(d.employmentBreakdown||{})},plans:{...blankPlans(),...(d.plans||{})},healthPathways:{...blankHealth(),...(base.healthPathways||{})},medicalSpecialties:(d.medicalSpecialties||[]).map(x=>({...x}))};}
+function withDetails(base,key){const d=DETAILS[key]||{};const education={...blankEdu(),...(d.education||{})};education.school+=Number(education.unknown||0);education.unknown=0;return {...base,education,gender:{...blankGender(),...(d.gender||{})},employmentBreakdown:{...blankEmp(),...(d.employmentBreakdown||{})},plans:{...blankPlans(),...(d.plans||{})},healthPathways:{...blankHealth(),...(base.healthPathways||{})},medicalSpecialties:(d.medicalSpecialties||[]).map(x=>({...x}))};}
 function sourceSummary(hudud=''){
  const key=hudud?canonicalHudud(hudud):'';
  if(!key)return withDetails({...GLOBAL,medicalEducation:{...GLOBAL.medicalEducation},diagnoses:GLOBAL.diagnoses.map(x=>({...x}))},'__GLOBAL__');
