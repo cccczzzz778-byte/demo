@@ -39,10 +39,56 @@
     const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT|NodeFilter.SHOW_ELEMENT);
     let n;while((n=walker.nextNode())){if(n.nodeType===Node.TEXT_NODE)textNode(n);else attrs(n)}
   }
+  function addOption(select,value,label=value){
+    if(!select||[...select.options].some(o=>o.value===value))return;
+    const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);
+  }
+  function validateAdminGraduateForm(){
+    const pinfl=document.getElementById('e-pinfl');
+    if(pinfl&&pinfl.value.trim()){
+      const digits=pinfl.value.replace(/\D/g,'');
+      if(digits.length!==14)return'JSHSHIR 14 ta raqamdan iborat bo‘lishi kerak.';
+      pinfl.value=digits;
+    }
+    for(const id of ['e-amb','e-inp','e-oper','e-wd','e-wr','e-wrep']){
+      const input=document.getElementById(id);if(!input||input.value==='')continue;
+      if(input.value!=='0'&&input.value!=='1')return`${input.previousElementSibling?.textContent||id} faqat 0 yoki 1 bo‘lishi kerak.`;
+    }
+    const dateRe=/^(?:\d{4}-\d{2}-\d{2}|\d{2}[./-]\d{2}[./-]\d{4})$/;
+    for(const id of ['e-birth','e-orderdate','e-examdate']){
+      const input=document.getElementById(id);if(input&&input.value.trim()&&!dateRe.test(input.value.trim()))return`${input.previousElementSibling?.textContent||'Sana'} noto‘g‘ri formatda.`;
+    }
+    return'';
+  }
+  function setupAdminEditor(){
+    const tbody=document.getElementById('tb'),save=document.getElementById('save');
+    if(!tbody||!save)return;
+    addOption(document.getElementById('employment'),'D nazoratda turgan');
+    addOption(document.getElementById('e-emp'),'D nazoratda turgan');
+    const table=tbody.closest('table'),head=table?.querySelector('thead tr');
+    if(head&&!head.querySelector('[data-edit-col]')){const th=document.createElement('th');th.setAttribute('data-edit-col','1');th.textContent='Tahrirlash';head.append(th)}
+    const enhanceRows=()=>{
+      for(const tr of tbody.querySelectorAll('tr[data-id]')){
+        if(tr.querySelector('[data-edit-id]'))continue;
+        const td=document.createElement('td'),button=document.createElement('button');
+        button.type='button';button.className='btn';button.textContent='Tahrirlash';button.setAttribute('data-edit-id',tr.dataset.id||'');
+        button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();tr.click()});
+        td.append(button);tr.append(td);
+      }
+    };
+    enhanceRows();
+    new MutationObserver(enhanceRows).observe(tbody,{childList:true});
+    save.addEventListener('click',event=>{
+      const error=validateAdminGraduateForm();
+      if(!error)return;
+      event.preventDefault();event.stopImmediatePropagation();alert(error);
+    },true);
+  }
   function start(){
     document.documentElement.lang='uz-Latn';
     document.title=toLatin(document.title);
     scan(document.body);
+    setupAdminEditor();
     const observer=new MutationObserver(list=>{
       for(const m of list){
         if(m.type==='characterData')textNode(m.target);
