@@ -47,7 +47,7 @@ function aggregateGraduateRows(rows=[],filterHudud=''){
     else if(edu==='Texnikum'){out.nonHigher++;out.education.technical++;}
     else if(edu==='Litsey'){out.nonHigher++;out.education.lyceum++;}
     else if(edu==='Maktab'){out.nonHigher++;out.education.school++;}
-    else out.education.unknown++;
+    else{out.nonHigher++;out.education.school++;}
     const g=norm(row.jins||row.gender);if(/erkak|эркак/.test(g))out.gender.male++;else if(/ayol|аел|аёл/.test(g))out.gender.female++;else out.gender.unknown++;
     const emp=normalizeEmploymentStatus(row.employment_status||row.holat||row.bandlik_holati);if(emp==='Ishlaydi')out.working++;if(emp==='Ishsiz')out.unemployed++;
     const h=norm(row.holat||row.employment_detail||'');const eb=out.employmentBreakdown;
